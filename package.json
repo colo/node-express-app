@@ -1,0 +1,31 @@
+{
+  "name": "login",
+  "version": "0.0.1",
+  "description": "Login App",
+  "author": {
+    "name": "Luciano Bueno",
+    "email": "glamero@gmail.com"
+  },
+  "main": "./",
+  "engines": {
+    "node": ">= 0.10.21"
+  },
+  "dependencies": {
+    "express": "^4.13.4",
+    "express-session": "^1.13.0",
+    "mootools": "^1.5.2",
+    "semver": "^5.1.0"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://www.opensource.org/licenses/MIT"
+    }
+  ],
+  "keywords": [
+    "login",
+    "authentication"
+  ]
+}
