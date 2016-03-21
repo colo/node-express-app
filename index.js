@@ -99,7 +99,7 @@ module.exports = new Class({
 		content_type: /^application\/(?:x-www-form-urlencoded|x-.*\+json|json)(?:[\s;]|$)/,
 		
 		//path: '/api',
-		path: '/',
+		path: '',
 		
 		version: '0.0.0',
 		
@@ -388,6 +388,7 @@ module.exports = new Class({
 					
 				}.bind(this));
 				
+				console.log('api path '+path);
 				
 				if(api.force_versioned_path){//route only work on api-version path
 					app[verb](versioned_path, callbacks);
@@ -473,6 +474,29 @@ module.exports = new Class({
   express: function(){
 	  return this.app;
   },
+  404: function(req, res, next, err){
+		
+		res.status(404);
+		
+		res.format({
+			'text/plain': function(){
+				res.send('Not Found');
+			},
+
+			'text/html': function(){
+				res.send('Not Found');
+			},
+
+			'application/json': function(){
+				res.send({error: 'Not Found'});
+			},
+
+			'default': function() {
+				// log the request and respond with 406
+				res.status(406).send('Not Found '+ err);
+			}
+		});
+	},
   //required for 'check_authentication', should be 'implement' injected on another module, auto-loaded by authentication?
   403: function(req, res, next, err){
 		
