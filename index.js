@@ -37,7 +37,9 @@ module.exports = new Class({
 		//store: new SessionMemoryStore,
 		//proxy: true,
 		//cookie: { path: '/', httpOnly: true, maxAge: null },
-		cookie : { secure : false, maxAge : (4 * 60 * 60 * 1000) }, // 4 hours
+		//cookie : { secure : false, maxAge : (4 * 60 * 60 * 1000) }, // 4 hours
+		//session: {store: null, proxy: true, cookie: { path: '/', httpOnly: true, maxAge: null }, secret: 'keyboard cat'},
+		cookie: { path: '/', httpOnly: true, maxAge: null, secure: false },
 		secret: 'keyboard cat',
 		resave: true,
 		saveUninitialized: true
@@ -251,10 +253,12 @@ module.exports = new Class({
 								  });
 			}
 			
+			this.authentication = authentication;
+			
 			if(this.options.authentication.users)//empty users data, as is easy accesible
 				this.options.authentication.users = {};
 			
-			this.authentication = authentication;
+			
 		}
 		/**
 		 * authentication
@@ -273,7 +277,7 @@ module.exports = new Class({
 				authorization = this.options.authorization;
 				this.options.authorization = {};
 			}
-			else{
+			else if(this.options.authorization.config){
 				var rbac = this.options.authorization.config;
 				
 				if(typeof(this.options.authorization.config) == 'string'){
@@ -289,8 +293,10 @@ module.exports = new Class({
 				);
 			}
 			
-			this.authorization = authorization;
-			app.use(this.authorization.session());
+			if(authorization){
+				this.authorization = authorization;
+				app.use(this.authorization.session());
+			}
 		}
 		/**
 		 * authorization
