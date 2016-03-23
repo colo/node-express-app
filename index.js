@@ -29,9 +29,10 @@ module.exports = new Class({
 	id: '',
 	path: '',
 	
-	logs : { 
-		path: './logs' 
-	},
+	//logs : { 
+		//path: './logs' 
+	//},
+	logs: null,
 	
 	session: {
 		//store: new SessionMemoryStore,
@@ -45,9 +46,11 @@ module.exports = new Class({
 		saveUninitialized: true
 	},
 	
-	authentication: {
-		users : [],
-	},
+	authentication: null,
+	
+	//authentication: {
+		//users : [],
+	//},
 	
 	authorization: {
 		config: null,
@@ -179,15 +182,22 @@ module.exports = new Class({
 		 * logger
 		 *  - start
 		 * **/
-		if(this.options.logs && (typeof(this.options.logs) == 'class' || typeof(this.options.logs) == 'function')){
-			this.logger = this.options.logs;
-			this.options.logs = {};
+		if(this.options.logs){
+			if(typeof(this.options.logs) == 'class'){
+				var tmp_class = this.options.logs;
+				this.logger = new tmp_class(this, {});
+				this.options.logs = {};
+			}
+			else if(typeof(this.options.logs) == 'function'){
+				this.logger = this.options.logs;
+				this.options.logs = {};
+			}
+			else{
+				this.logger = new Logger(this, this.options.logs);
+			}
+		
+			app.use(this.logger.access());
 		}
-		else{
-			this.logger = new Logger(this, this.options.logs);
-		}
-	
-		app.use(this.logger.access());
 		/**
 		 * logger
 		 *  - end
@@ -226,8 +236,11 @@ module.exports = new Class({
 		if(this.options.authentication){
 			var authentication = null;
 			
-			if(typeof(this.options.authentication) == 'class' || typeof(this.options.authentication) == 'function'){
-					
+			if(typeof(this.options.authentication) == 'class'){
+				authentication = new this.options.authentication(this, {});
+				this.options.authentication = {};
+			}
+			else if(typeof(this.options.authentication) == 'function'){
 				authentication = this.options.authentication;
 				this.options.authentication = {};
 			}
@@ -303,7 +316,7 @@ module.exports = new Class({
 		 * - end
 		 * */
 		
-		this.profile('app_init');//start profiling
+		//this.profile('app_init');//start profiling
 		
 		if(this.options.api.versioned_path !== true)
 			this.options.api.force_versioned_path = false;
@@ -316,9 +329,9 @@ module.exports = new Class({
 		this.apply_api_routes();
 		
 		
-		this.profile('app_init');//end profiling
+		//this.profile('app_init');//end profiling
 		
-		this.log('admin', 'info', 'app started');
+		//this.log('admin', 'info', 'app started');
 		
 		
   },
