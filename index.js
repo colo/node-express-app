@@ -19,6 +19,10 @@ var Logger = require('node-express-logger'),
 module.exports = new Class({
   Implements: [Options, Events],
   
+  ON_LOAD_APP: 'onLoadApp',
+  ON_USE: 'onUse',
+  ON_USE_APP: 'onUseApp',
+  
   app: null,
   logger: null,
   authorization:null,
@@ -50,11 +54,14 @@ module.exports = new Class({
 	
 	//authentication: {
 		//users : [],
+		//init: true
 	//},
 	
-	authorization: {
-		config: null,
-	},
+	//authorization: {
+		//config: null,
+		//init: true
+	//},
+	authorization: null,
 	
 	params: {	  
 	},
@@ -233,7 +240,7 @@ module.exports = new Class({
 		 * authentication
 		 * - start
 		 * */
-		if(this.options.authentication){
+		if(this.options.authentication && this.options.authentication.init !== false){
 			var authentication = null;
 			
 			if(typeof(this.options.authentication) == 'class'){
@@ -282,11 +289,14 @@ module.exports = new Class({
 		 * authorization
 		 * - start
 		 * */
-		 if(this.options.authorization){
+		 if(this.options.authorization && this.options.authorization.init !== false){
 			 var authorization = null;
 			 
-			 if(typeof(this.options.authorization) == 'class' || typeof(this.options.authorization) == 'function'){
-					
+			 if(typeof(this.options.authorization) == 'class'){
+				 authorization = new this.options.authorization({});
+				 this.options.authorization = {};
+			 }
+			 else if(typeof(this.options.authorization) == 'function'){
 				authorization = this.options.authorization;
 				this.options.authorization = {};
 			}
@@ -337,7 +347,7 @@ module.exports = new Class({
   },
 	/**
 	* @params
-	* 
+	* @todo should rise an Error???
 	* */
   sanitize_params: function(){
 	 
@@ -389,6 +399,7 @@ module.exports = new Class({
 				
 				var callbacks = [];
 				route.callbacks.each(function(fn){
+					//console.log('apply_api_routes this[func]: '+fn);
 					
 					//if(content_type != ''){
 						//~ callbacks.push(this.check_content_type_api.bind(this));
@@ -453,43 +464,182 @@ module.exports = new Class({
   },
   apply_routes: function(){
 	  
-	if(this.options.routes){
-		var app = this.app;
-		
-		Object.each(this.options.routes, function(routes, verb){//for each HTTP VERB (get/post/...) there is an arry of routes
+		if(this.options.routes){
+			var app = this.app;
 			
-			var content_type = (typeof(this.options.content_type) !== "undefined") ? this.options.content_type : '';
-			
-			routes.each(function(route){//each array is a route
+			Object.each(this.options.routes, function(routes, verb){//for each HTTP VERB (get/post/...) there is an arry of routes
 				
-				//var path = app.path + route.path;
-				content_type = (typeof(route.content_type) !== "undefined") ? route.content_type : content_type;
-			
-				//console.log('specific route content-type: '+content_type);	
-			
-				var callbacks = [];
-				route.callbacks.each(function(fn){
+				var content_type = (typeof(this.options.content_type) !== "undefined") ? this.options.content_type : '';
+				
+				routes.each(function(route){//each array is a route
 					
-					console.log('rote function: ' + fn);
+					//var path = app.path + route.path;
+					content_type = (typeof(route.content_type) !== "undefined") ? route.content_type : content_type;
+				
+					//console.log('specific route content-type: '+content_type);	
+				
+					var callbacks = [];
+					route.callbacks.each(function(fn){
+						
+						console.log('rote function: ' + fn);
+						
+						if(content_type != ''){
+							callbacks.push(this.check_content_type.bind(this, this[fn].bind(this), content_type));
+						}
+						else{
+							callbacks.push(this[fn].bind(this));
+						}
+						
+					}.bind(this));
 					
-					if(content_type != ''){
-						callbacks.push(this.check_content_type.bind(this, this[fn].bind(this), content_type));
-					}
-					else{
-						callbacks.push(this[fn].bind(this));
-					}
-					
+					app[verb](route.path, callbacks);
+
 				}.bind(this));
-				
-				app[verb](route.path, callbacks);
 
 			}.bind(this));
-
-		}.bind(this));
-	}
+		}
 	
   }.protect(),
-  
+  use: function(mount, app){
+		console.log('app');
+		console.log(typeOf(app));
+		
+		this.fireEvent(this.ON_USE, [app, this]);
+		
+		if(typeOf(app) == 'class' || typeOf(app) == 'object')
+			this.fireEvent(this.ON_USE_APP, [app, this]);
+		
+		if(typeOf(app) == 'class')
+			app = new app();
+		
+		if(typeOf(app) == 'object'){
+			//console.log('extend_app.authorization');
+			console.log(app.options.authorization);
+	
+			if(this.authorization && app.options.authorization && app.options.authorization.config){
+				
+				var rbac = fs.readFileSync(app.options.authorization.config , 'ascii');
+				app.options.authorization.config = rbac;
+				this.authorization.processRules(
+					JSON.decode(
+						rbac
+					)
+				);
+			}
+			
+			this.app.use(mount, app.express());
+		}
+		else{
+			this.app.use(mount, app);
+		}
+  },
+  load: function(wrk_dir, options){
+		options = options || {};
+		
+		//console.log('load.options');
+		//console.log(options);
+		
+		fs.readdirSync(wrk_dir).forEach(function(file) {
+
+			var full_path = path.join(wrk_dir, file);
+			
+			
+			if(! (file.charAt(0) == '.')){//ommit 'hiden' files
+				//console.log('-------');
+				
+				//console.log('app load: '+ file);
+				var app = null;
+				var id = '';//app id
+				var mount = '';
+				
+				if(fs.statSync(full_path).isDirectory() == true){//apps inside dir
+					
+					//console.log('dir app: '+full_path);
+					
+					var dir = file;//is dir
+					
+					fs.readdirSync(full_path).forEach(function(file) {//read each file in directory
+						
+						if(path.extname(file) == '.js' && ! (file.charAt(0) == '.')){
+							
+							//console.log('app load js: '+ file);
+							app = require(path.join(full_path, file));
+							
+							if(file == 'index.js'){
+								mount = id = dir;
+							}
+							else{
+								id = dir+'.'+path.basename(file, '.js');
+								mount = dir+'/'+path.basename(file, '.js');
+							}
+							
+							if(typeOf(app) == 'class'){//mootools class
+								//console.log('class app');
+								
+								this.fireEvent(this.ON_LOAD_APP, [app, this]);
+								
+								app = new app(options);
+								
+								/*//console.log('mootols_app.params:');
+								//console.log(Object.clone(instance.params));*/
+								
+								//app = instance.express();
+								//id = (instance.id) ? instance.id : id;
+								//apps[app.locals.id || id]['app'] = app;
+							}
+							else{//nodejs module
+								//console.log('express app...nothing to do');
+							}
+							
+							mount = '/'+mount;
+							
+							this.use(mount, app);
+							//apps[app.locals.id || id] = {};
+							//apps[app.locals.id || id]['app'] = app;
+							//apps[app.locals.id || id]['mount'] = mount;
+						}
+
+					}.bind(this));//end load single JS files
+
+				}
+				else if(path.extname( file ) == '.js'){// single js apps
+					//console.log('file app: '+full_path);
+					//console.log('basename: '+path.basename(file, '.js'));
+					
+					app = require(full_path);
+					id = path.basename(file, '.js');
+					
+					if(file == 'index.js'){
+						mount = '/';
+					}
+					else{
+						mount = '/'+id;
+					}
+					
+					if(typeOf(app) == 'class'){//mootools class
+						
+						this.fireEvent(this.ON_LOAD_APP, [app, this]);
+						
+						app = new app(options);
+						//app = instance.express();
+						//id = (instance.id) ? instance.id : id;
+					}
+					else{//nodejs module
+						//console.log('express app...nothing to do');
+					}
+					
+					this.use(mount, app);
+					//apps[app.locals.id || id] = {};
+					//apps[app.locals.id || id]['app'] = app;
+					//apps[app.locals.id || id]['mount'] = mount;
+				}
+				
+				
+			}
+		}.bind(this))
+		
+		//return apps;
+	},
   express: function(){
 	  return this.app;
   },
