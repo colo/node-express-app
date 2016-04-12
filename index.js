@@ -351,90 +351,90 @@ module.exports = new Class({
 	* */
   sanitize_params: function(){
 	 
-	var params = Object.clone(this.options.params);
-	
-	if(params){
-		var app = this.app;
+		var params = Object.clone(this.options.params);
 		
-		Object.each(params, function(condition, param){
+		if(params){
+			var app = this.app;
 			
-			app.param(param, function(req, res, next, str){
+			Object.each(params, function(condition, param){
 				
-				if(condition.exec(str) == null)
-					req.params[param] = null;
+				app.param(param, function(req, res, next, str){
 					
-				next();
+					if(condition.exec(str) == null)
+						req.params[param] = null;
+						
+					next();
+				});
 			});
-		});
-	}
+		}
   }.protect(),
   
   apply_api_routes: function(){
-	var api = this.options.api;
-	
-	if(api.routes){
-		var app = this.app;
+		var api = this.options.api;
 		
-		Object.each(api.routes, function(routes, verb){//for each HTTP VERB (get/post/...) there is an arry of routes
+		if(api.routes){
+			var app = this.app;
 			
-			var content_type = (typeof(api.content_type) !== "undefined") ? api.content_type : '';
-			var version = (typeof(api.version) !== "undefined") ? api.version : '';
-			
-			routes.each(function(route){//each array is a route
+			Object.each(api.routes, function(routes, verb){//for each HTTP VERB (get/post/...) there is an arry of routes
 				
-				content_type = (typeof(route.content_type) !== "undefined") ? route.content_type : content_type;
-				version = (typeof(route.version) !== "undefined") ? route.version : version;
+				var content_type = (typeof(api.content_type) !== "undefined") ? api.content_type : '';
+				var version = (typeof(api.version) !== "undefined") ? api.version : '';
 				
-				var path = '';
-				path += (typeof(api.path) !== "undefined") ? api.path : '';
-				
-				var versioned_path = '';
-				
-				if(api.versioned_path === true && version != ''){
-					versioned_path = path + '/v'+semver.major(version);
-					versioned_path += (typeof(route.path) !== "undefined") ? '/' + route.path : '';
-				}
-				
-				path += (typeof(route.path) !== "undefined") ? '/' + route.path : '';
-				
-				var callbacks = [];
-				route.callbacks.each(function(fn){
-					//console.log('apply_api_routes this[func]: '+fn);
+				routes.each(function(route){//each array is a route
 					
-					//if(content_type != ''){
-						//~ callbacks.push(this.check_content_type_api.bind(this));
-						callbacks.push(
-							this.check_content_type.bind(this, 
-								this.check_accept_version.bind(this, 
-									this[fn].bind(this),
-									version),
-							content_type)
-						);
-					//}
-					//else{
-						//callbacks.push(this[fn].bind(this));
-					//}
+					content_type = (typeof(route.content_type) !== "undefined") ? route.content_type : content_type;
+					version = (typeof(route.version) !== "undefined") ? route.version : version;
 					
+					var path = '';
+					path += (typeof(api.path) !== "undefined") ? api.path : '';
 					
-				}.bind(this));
-				
-				console.log('api path '+path);
-				
-				if(api.force_versioned_path){//route only work on api-version path
-					app[verb](versioned_path, callbacks);
-				}
-				else{//route works on defined path
-					if(api.versioned_path === true && version != ''){//route also works on api-version path
+					var versioned_path = '';
+					
+					if(api.versioned_path === true && version != ''){
+						versioned_path = path + '/v'+semver.major(version);
+						versioned_path += (typeof(route.path) !== "undefined") ? '/' + route.path : '';
+					}
+					
+					path += (typeof(route.path) !== "undefined") ? '/' + route.path : '';
+					
+					var callbacks = [];
+					route.callbacks.each(function(fn){
+						//console.log('apply_api_routes this[func]: '+fn);
+						
+						//if(content_type != ''){
+							//~ callbacks.push(this.check_content_type_api.bind(this));
+							callbacks.push(
+								this.check_content_type.bind(this, 
+									this.check_accept_version.bind(this, 
+										this[fn].bind(this),
+										version),
+								content_type)
+							);
+						//}
+						//else{
+							//callbacks.push(this[fn].bind(this));
+						//}
+						
+						
+					}.bind(this));
+					
+					console.log('api path '+path);
+					
+					if(api.force_versioned_path){//route only work on api-version path
 						app[verb](versioned_path, callbacks);
 					}
-					app[verb](path, callbacks);
-				}
+					else{//route works on defined path
+						if(api.versioned_path === true && version != ''){//route also works on api-version path
+							app[verb](versioned_path, callbacks);
+						}
+						app[verb](path, callbacks);
+					}
+
+				}.bind(this));
 
 			}.bind(this));
-
-		}.bind(this));
-	}
-  }.protect(),
+		}
+  },
   check_content_type: function(callback, content_type, req, res, next){
 	  
 	  if(this.options.api.force_versioned_path ||//if apt-version path is forced, no checks needed
@@ -499,7 +499,7 @@ module.exports = new Class({
 			}.bind(this));
 		}
 	
-  }.protect(),
+  },
   use: function(mount, app){
 		console.log('app');
 		console.log(typeOf(app));
