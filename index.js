@@ -504,17 +504,17 @@ module.exports = new Class({
 		console.log('app');
 		console.log(typeOf(app));
 		
-		this.fireEvent(this.ON_USE, [app, this]);
+		this.fireEvent(this.ON_USE, [mount, app, this]);
 		
 		if(typeOf(app) == 'class' || typeOf(app) == 'object')
-			this.fireEvent(this.ON_USE_APP, [app, this]);
+			this.fireEvent(this.ON_USE_APP, [mount, app, this]);
 		
 		if(typeOf(app) == 'class')
 			app = new app();
 		
 		if(typeOf(app) == 'object'){
 			//console.log('extend_app.authorization');
-			console.log(app.options.authorization);
+			//console.log(app.options.authorization);
 	
 			if(this.authorization && app.options.authorization && app.options.authorization.config){
 				
