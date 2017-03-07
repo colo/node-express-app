@@ -5,18 +5,28 @@ var moootools = require('mootools');
 module.exports =  new Class({
   Implements: [Options, Events],
   
-  options: {
-	users: null,
+  //options: {
+	//users: null,
+  //},
+  
+  //initialize: function(options){
+	//this.setOptions(options);
+  //},
+  users: [],
+  
+  initialize: function(users){
+		this.users = users;
   },
   
-  initialize: function(options){
-	this.setOptions(options);
-  },
   authenticate: function (username, password, fn) {
 	var user = null;
 	var error = null;
 	
-	this.options.users.each(function(item){
+	console.log('libs/mockups/authentication/type/users.authenticate');
+	console.log(this.users);
+	
+	//this.options.users.each(function(item){
+	this.users.each(function(item){
 	  if(item.username == username && item.password == password){
 		user = username;
 	  }

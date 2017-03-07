@@ -268,7 +268,8 @@ module.exports = new Class({
 				
 				authentication = new Authentication(this, {
 										store: new MemoryStore(users),
-										auth: new UsersAuth({users: users}),
+										//auth: new UsersAuth({users: users}),
+										auth: new UsersAuth(users),
 										passport: {session: (this.options.session) ? true : false}
 								  });
 			}
