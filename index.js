@@ -256,7 +256,9 @@ module.exports = new Class({
 				var MemoryStore = require('node-authentication').MemoryStore;
 			
 				//----Mockups libs
-				var UsersAuth = require(path.join(__dirname, 'libs/mockups/authentication/type/users'));
+				//var UsersAuth = require(path.join(__dirname, 'libs/mockups/authentication/type/users'));
+				
+				var MemoryAuth = require('node-authentication').MemoryAuth;
 				
 				/*
 				 var MemcachedStore = require('connect-memcached')(require('express-session'));
@@ -264,12 +266,12 @@ module.exports = new Class({
 					hosts: ['127.0.0.1:11211']
 				})
 				*/
-				var users = this.options.authentication.users;
+				var users = { 'users': this.options.authentication.users };
 				
 				authentication = new Authentication(this, {
 										store: new MemoryStore(users),
 										//auth: new UsersAuth({users: users}),
-										auth: new UsersAuth(users),
+										auth: new MemoryAuth(users),
 										passport: {session: (this.options.session) ? true : false}
 								  });
 			}
