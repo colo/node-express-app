@@ -266,14 +266,20 @@ module.exports = new Class({
 					hosts: ['127.0.0.1:11211']
 				})
 				*/
-				var users = { 'users': this.options.authentication.users };
+				var users = this.options.authentication.users;
 				
-				authentication = new Authentication(this, {
-										store: new MemoryStore(users),
-										//auth: new UsersAuth({users: users}),
-										auth: new MemoryAuth(users),
-										passport: {session: (this.options.session) ? true : false}
-								  });
+				//authentication = new Authentication(this, {
+										//store: new MemoryStore(users),
+										////auth: new UsersAuth({users: users}),
+										//auth: new MemoryAuth(users),
+										//passport: {session: (this.options.session) ? true : false}
+								  //});
+				
+				authentication = new Authentication(this,
+													new MemoryStore(users),
+													new MemoryAuth(users),
+													{ passport: {session: (this.options.session) ? true : false} }
+												);
 			}
 			
 			this.authentication = authentication;
