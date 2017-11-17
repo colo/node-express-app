@@ -702,6 +702,9 @@ module.exports = new Class({
 	//required for 'check_authentication', should be 'implement' injected on another module, auto-loaded by authentication?
 	500: function(req, res, next, err){
 		
+		/*console.log('500');
+		console.log(err);*/
+		
 		res.status(500);
 		
 		res.format({
