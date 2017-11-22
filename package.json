@@ -14,7 +14,8 @@
     "express": "^4.13.4",
     "express-session": "^1.13.0",
     "mootools": "^1.5.2",
-    "semver": "^5.1.0"
+    "semver": "^5.1.0",
+    "uuid": "^3.1.0"
   },
   "devDependencies": {},
   "optionalDependencies": {},

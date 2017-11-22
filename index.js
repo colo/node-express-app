@@ -8,6 +8,7 @@ var Moo = require("mootools"),
 	session = require('express-session');//for passport session
 	//bodyParser = require('body-parser'),//json parse
 
+const uuidv5 = require('uuid/v5');
 	
 
 var Logger = require('node-express-logger'),
@@ -27,6 +28,7 @@ module.exports = new Class({
   logger: null,
   authorization:null,
   authentication: null,
+  uuid: null,
   
   options: {
 	  
@@ -175,6 +177,12 @@ module.exports = new Class({
   initialize: function(options){
 		
 		this.setOptions(options);//override default options
+		
+		this.uuid = uuidv5(this.options.path, uuidv5.URL);
+		
+		//console.log('----UUID----');
+		//console.log(this.options.path);
+		//console.log(this.uuid);
 		
 		var app = express();
 		this.app = app;
