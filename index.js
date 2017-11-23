@@ -25,6 +25,12 @@ module.exports = new Class({
   ON_USE: 'onUse',
   ON_USE_APP: 'onUseApp',
   
+  ON_INIT_AUTHORIZATION: 'onInitAuthorization',
+  ON_INIT_AUTHENTICATION: 'onInitAuthentication',
+  ON_BEFORE_ROUTES: 'onBeforeRoutes',
+  ON_BEFORE_API_ROUTES: 'onBeforeApiRoutes',
+  ON_INIT: 'onInit',
+  
   app: null,
   logger: null,
   authorization:null,
@@ -181,7 +187,24 @@ module.exports = new Class({
 		},*/
 	},
   },
-  initialize: function(options){
+  initialize: function(options, extra){
+		console.log('----parent----');
+		console.log(extra);
+		//this.addEvent(this.ON_INIT_AUTHORIZATION, function(){
+			//console.log('---this.ON_INIT_AUTHORIZATION---');
+			//console.log(this.uuid)
+		//}.bind(this));
+		
+		//this.addEvent(this.ON_BEFORE_ROUTES, function(){
+			//console.log('---this.ON_BEFORE_ROUTES---');
+			//console.log(this.uuid)
+		//}.bind(this));
+		
+		//this.addEvent(this.ON_BEFORE_API_ROUTES, function(){
+			//console.log('---this.ON_BEFORE_API_ROUTES---');
+			//console.log(this.uuid)
+		//}.bind(this));
+		
 		
 		this.setOptions(options);//override default options
 		
@@ -302,7 +325,7 @@ module.exports = new Class({
 			if(this.options.authentication.users)//empty users data, as is easy accesible
 				this.options.authentication.users = {};
 			
-			
+			this.fireEvent(this.ON_INIT_AUTHENTICATION, authentication);			
 		}
 		/**
 		 * authentication
@@ -344,18 +367,27 @@ module.exports = new Class({
 			if(authorization){
 				//if(this.options.authorization.init !== false){
 					this.authorization = authorization;
-					//if(this.options.authorization.init !== false)
 					
-						throw new Error('revisar el problema de como se inicia la session,'+
-						"\n ya que ahora si voy primero a /test se queda siempre como anon, "+
-						"\n hasta q me voy a / y cambia a admin (en /test tambien)\n"
+					if(extra && extra.authorization){
+						console.log('----parent.authorization---');
+						this.authorization.processRules(
+							extra.authorization.getRules()
 						);
+					}
+					//console.log(this.authorization.getRoles());
+					//if(this.options.authorization.init !== false){
+					
+						//throw new Error('revisar el problema de como se inicia la session,'+
+						//"\n ya que ahora si voy primero a /test se queda siempre como anon, "+
+						//"\n hasta q me voy a / y cambia a admin (en /test tambien)\n"
+						//);
 						app.use(this.authorization.session());
-				//}
+					//}
 				//else{
 					//this._authorization = authorization;
 				//}
-					
+				
+				this.fireEvent(this.ON_INIT_AUTHORIZATION, authorization);
 			}
 		}
 		/**
@@ -371,7 +403,11 @@ module.exports = new Class({
 		
 		this.sanitize_params();
 		
+		this.fireEvent(this.ON_BEFORE_ROUTES);
+		
 		this.apply_routes();
+		
+		this.fireEvent(this.ON_BEFORE_API_ROUTES);
 		
 		this.apply_api_routes();
 		
@@ -379,6 +415,8 @@ module.exports = new Class({
 		//this.profile('app_init');//end profiling
 		
 		//this.log('admin', 'info', 'app started');
+		this.fireEvent(this.ON_INIT);
+		
 		
 		
   },
@@ -482,6 +520,14 @@ module.exports = new Class({
 						}
 					}.bind(this));
 					
+					if(route.roles){
+						route.roles.each(function(role){
+							console.log('---route.role---');
+							if(this.authorization)
+								console.log(this.authorization.getRoles());
+								
+						}.bind(this));
+					}
 					
 				}.bind(this));
 
@@ -508,8 +554,8 @@ module.exports = new Class({
 		!req.headers[accept_header] ||
 		semver.satisfies(version, req.headers[accept_header])){
 		
-		req.version = version;	
-		callback(req, res, next);
+			req.version = version;	
+			callback(req, res, next);
 	  }
 	  else{
 			next();
@@ -549,16 +595,25 @@ module.exports = new Class({
 					
 					app[verb](route.path, callbacks);
 					
+					var perm_id = null;
+					
 					if(verb == 'all'){
 						//console.log('---methods---');
 						//console.log(methods);
 						methods.each(function(method){
-							this.create_authorization_permission(method, this.uuid+'_'+route.path);
+							perm_id = this.create_authorization_permission(method, this.uuid+'_'+route.path);
 						}.bind(this));
 					}
 					else{
-						this.create_authorization_permission(verb, this.uuid+'_'+route.path);
+						perm_id = this.create_authorization_permission(verb, this.uuid+'_'+route.path);
+						
 					}
+					
+					//if(route.roles){
+						//route.roles.each(function(role){
+							//console.log('---route.role---');
+						//});
+					//}
 
 				}.bind(this));
 
@@ -566,6 +621,10 @@ module.exports = new Class({
 		}
 	
   },
+  /**
+   * return resource ID
+   * 
+   * */
   create_authorization_permission: function(op, res){
 		//console.log('creating...');
 		//console.log({
@@ -587,6 +646,8 @@ module.exports = new Class({
 				}]
 			});
 		}
+		
+		return res+'_'+op;
 	}.protect(),
   use: function(mount, app){
 		//console.log('app');
@@ -598,34 +659,33 @@ module.exports = new Class({
 			this.fireEvent(this.ON_USE_APP, [mount, app, this]);
 		
 		if(typeOf(app) == 'class')
-			app = new app();
+			app = new app({}, { authorization: this.authorization });
 		
 		if(typeOf(app) == 'object'){
 			////console.log('extend_app.authorization');
 			////console.log(app.options.authorization);
-	
-			//if(this.authorization && app.options.authorization && app.options.authorization.config){
-			if(this.authorization && app.authorization){
-				//var rbac = fs.readFileSync(app.options.authorization.config , 'ascii');
-				//app.options.authorization.config = rbac;
+			
+			//if(this.authentication && !app.authentication){
+				//app.authentication = this.authentication;
 				
-				var rules = this.authorization.getRules();
+			//}
+			
+			
+			//if(this.authorization && app.authorization){
+				///**
+				 //* sub-app gets parents rbac
+				 //* 
+				 //* */
+				//app.authorization.processRules(
+					////JSON.decode(
+						//this.authorization.getRules()
+					////)
+				//);
+
 				
-				console.log(rules);
-				//console.log(app.authorization.getRules())
-				/**
-				 * sub-app gets parents rbac
-				 * 
-				 * */
-				app.authorization.processRules(
-					//JSON.decode(
-						rules
-					//)
-				);
-				
-				//console.log(app._authorization.getRules());
-				
-			}
+			//}
+			
+			
 			
 			this.app.use(mount, app.express());
 		}
@@ -674,12 +734,17 @@ module.exports = new Class({
 							}
 							
 							if(typeOf(app) == 'class'){//mootools class
-								////console.log('class app');
+								console.log('class app');
 								
 								this.fireEvent(this.ON_LOAD_APP, [app, this]);
 								
-								app = new app(options);
+								app = new app(options, { authorization: this.authorization });
 								
+								//app.addEvent(this.ON_INIT, function(){
+									//console.log('---app.INIT---');
+									//console.log(this.uuid)
+								//}.bind(app));
+		
 								/*////console.log('mootols_app.params:');
 								////console.log(Object.clone(instance.params));*/
 								
@@ -717,10 +782,17 @@ module.exports = new Class({
 					}
 					
 					if(typeOf(app) == 'class'){//mootools class
+						console.log('class app');
 						
 						this.fireEvent(this.ON_LOAD_APP, [app, this]);
 						
-						app = new app(options);
+						app = new app(options, { authorization: this.authorization });
+						
+						//app.addEvent(this.ON_INIT, function(){
+							//console.log('---app.INIT---');
+							//console.log(this.uuid)
+						//}.bind(app));
+		
 						//app = instance.express();
 						//id = (instance.id) ? instance.id : id;
 					}
