@@ -8,7 +8,8 @@ var Moo = require("mootools"),
 	session = require('express-session');//for passport session
 	//bodyParser = require('body-parser'),//json parse
 
-const uuidv5 = require('uuid/v5');
+const uuidv5 = require('uuid/v5'),
+			methods = require('methods'); //installed by expressjs
 	
 
 var Logger = require('node-express-logger'),
@@ -59,10 +60,16 @@ module.exports = new Class({
 		//init: true
 	//},
 	
-	//authorization: {
-		//config: null,
-		//init: true
-	//},
+	/**
+	 * authorization: {
+	 * 	config: path.join(__dirname,'./rbac.json'),
+	 * 	init: true, //set false for not auto-init
+	 * 	operations_routes: true 
+	 * 		create operations based en http verbs on your routes (GET|POST|PUT|...)
+	 * 		& resources based on uuid_path
+	 * },
+	* */
+	
 	authorization: null,
 	
 	params: {	  
@@ -83,7 +90,7 @@ module.exports = new Class({
 		get: [
 			{
 				path: '/:param',
-				callbacks: ['check_authentication', 'get'],
+				callbacks: ['check_authentication', 'check_authorization', 'get'],
 				content_type: /text\/plain/,
 			},
 		],
@@ -306,7 +313,8 @@ module.exports = new Class({
 		 * authorization
 		 * - start
 		 * */
-		 if(this.options.authorization && this.options.authorization.init !== false){
+		 //if(this.options.authorization && this.options.authorization.init !== false){
+		 if(this.options.authorization){
 			 var authorization = null;
 			 
 			 if(typeof(this.options.authorization) == 'class'){
@@ -334,8 +342,20 @@ module.exports = new Class({
 			}
 			
 			if(authorization){
-				this.authorization = authorization;
-				app.use(this.authorization.session());
+				//if(this.options.authorization.init !== false){
+					this.authorization = authorization;
+					//if(this.options.authorization.init !== false)
+					
+						throw new Error('revisar el problema de como se inicia la session,'+
+						"\n ya que ahora si voy primero a /test se queda siempre como anon, "+
+						"\n hasta q me voy a / y cambia a admin (en /test tambien)\n"
+						);
+						app.use(this.authorization.session());
+				//}
+				//else{
+					//this._authorization = authorization;
+				//}
+					
 			}
 		}
 		/**
@@ -437,16 +457,32 @@ module.exports = new Class({
 					
 					//console.log('api path '+path);
 					
+					var usedPath = [];
 					if(api.force_versioned_path){//route only work on api-version path
 						app[verb](versioned_path, callbacks);
+						usedPath.push(versioned_path);
 					}
 					else{//route works on defined path
 						if(api.versioned_path === true && version != ''){//route also works on api-version path
 							app[verb](versioned_path, callbacks);
+							usedPath.push(versioned_path);
 						}
 						app[verb](path, callbacks);
+						usedPath.push(path);
 					}
-
+					
+					usedPath.each(function(path){
+						if(verb == 'all'){
+							methods.each(function(method){
+								this.create_authorization_permission(method, this.uuid+'_'+path);
+							}.bind(this));
+						}
+						else{
+							this.create_authorization_permission(verb, this.uuid+'_'+path);
+						}
+					}.bind(this));
+					
+					
 				}.bind(this));
 
 			}.bind(this));
@@ -509,7 +545,20 @@ module.exports = new Class({
 						
 					}.bind(this));
 					
+					
+					
 					app[verb](route.path, callbacks);
+					
+					if(verb == 'all'){
+						//console.log('---methods---');
+						//console.log(methods);
+						methods.each(function(method){
+							this.create_authorization_permission(method, this.uuid+'_'+route.path);
+						}.bind(this));
+					}
+					else{
+						this.create_authorization_permission(verb, this.uuid+'_'+route.path);
+					}
 
 				}.bind(this));
 
@@ -517,6 +566,28 @@ module.exports = new Class({
 		}
 	
   },
+  create_authorization_permission: function(op, res){
+		//console.log('creating...');
+		//console.log({
+			//'operation': op,
+			//'resource': res,
+			//'id': res+'_'+op
+		//});
+				
+		if(
+			this.authorization &&
+			this.options.authorization &&
+			this.options.authorization.operations_routes !== false
+		){
+			this.authorization.processRules({
+				'permissions': [{
+					'operation': op,
+					'resource': res,
+					'id': res+'_'+op
+				}]
+			});
+		}
+	}.protect(),
   use: function(mount, app){
 		//console.log('app');
 		//console.log(typeOf(app));
@@ -533,15 +604,27 @@ module.exports = new Class({
 			////console.log('extend_app.authorization');
 			////console.log(app.options.authorization);
 	
-			if(this.authorization && app.options.authorization && app.options.authorization.config){
+			//if(this.authorization && app.options.authorization && app.options.authorization.config){
+			if(this.authorization && app.authorization){
+				//var rbac = fs.readFileSync(app.options.authorization.config , 'ascii');
+				//app.options.authorization.config = rbac;
 				
-				var rbac = fs.readFileSync(app.options.authorization.config , 'ascii');
-				app.options.authorization.config = rbac;
-				this.authorization.processRules(
-					JSON.decode(
-						rbac
-					)
+				var rules = this.authorization.getRules();
+				
+				console.log(rules);
+				//console.log(app.authorization.getRules())
+				/**
+				 * sub-app gets parents rbac
+				 * 
+				 * */
+				app.authorization.processRules(
+					//JSON.decode(
+						rules
+					//)
 				);
+				
+				//console.log(app._authorization.getRules());
+				
 			}
 			
 			this.app.use(mount, app.express());
