@@ -14,7 +14,8 @@ const uuidv5 = require('uuid/v5'),
 
 var Logger = require('node-express-logger'),
 	Authorization = require('node-express-authorization'),
-	Authentication = require('node-express-authentication');
+	Authentication = require('node-express-authentication'),
+	Rbac = require('node-rbac');
 
 
 
@@ -69,7 +70,8 @@ module.exports = new Class({
 	/**
 	 * authorization: {
 	 * 	config: path.join(__dirname,'./rbac.json'),
-	 * 	init: true, //set false for not auto-init
+	 * 	process: extra rules loaded after config
+	 * 	- init: true, //set false for not auto-init
 	 * 	operations_routes: true 
 	 * 		create operations based en http verbs on your routes (GET|POST|PUT|...)
 	 * 		& resources based on uuid_path
@@ -187,9 +189,9 @@ module.exports = new Class({
 		},*/
 	},
   },
-  initialize: function(options, extra){
-		console.log('----parent----');
-		console.log(extra);
+  initialize: function(options){
+		//console.log('----parent----');
+		//console.log(extra);
 		//this.addEvent(this.ON_INIT_AUTHORIZATION, function(){
 			//console.log('---this.ON_INIT_AUTHORIZATION---');
 			//console.log(this.uuid)
@@ -368,10 +370,10 @@ module.exports = new Class({
 				//if(this.options.authorization.init !== false){
 					this.authorization = authorization;
 					
-					if(extra && extra.authorization){
-						console.log('----parent.authorization---');
+					if(this.options.authorization.process){
+						console.log('----this.options.authorization.process---');
 						this.authorization.processRules(
-							extra.authorization.getRules()
+							this.options.authorization.process
 						);
 					}
 					//console.log(this.authorization.getRoles());
@@ -415,7 +417,7 @@ module.exports = new Class({
 		//this.profile('app_init');//end profiling
 		
 		//this.log('admin', 'info', 'app started');
-		this.fireEvent(this.ON_INIT);
+		this.fireEvent(this.ON_INIT, this);
 		
 		
 		
@@ -509,25 +511,26 @@ module.exports = new Class({
 						usedPath.push(path);
 					}
 					
+					var perms = [];
 					usedPath.each(function(path){
+						//if(path == '')
+							//path = '/';
+							
 						if(verb == 'all'){
 							methods.each(function(method){
-								this.create_authorization_permission(method, this.uuid+'_'+path);
+								if(!api.routes[method])//ommit verbs that have a specific route already
+									perms.push(this.create_authorization_permission(method, this.uuid+'_'+path));
+									
 							}.bind(this));
 						}
 						else{
-							this.create_authorization_permission(verb, this.uuid+'_'+path);
+							perms.push(this.create_authorization_permission(verb, this.uuid+'_'+path));
 						}
 					}.bind(this));
 					
-					if(route.roles){
-						route.roles.each(function(role){
-							console.log('---route.role---');
-							if(this.authorization)
-								console.log(this.authorization.getRoles());
-								
-						}.bind(this));
-					}
+					this.apply_authorization_permissions(perms);
+					
+					this.apply_authorization_roles_permission(route, perms);
 					
 				}.bind(this));
 
@@ -595,19 +598,23 @@ module.exports = new Class({
 					
 					app[verb](route.path, callbacks);
 					
-					var perm_id = null;
-					
+					var perms = [];
+					//var path = (route.path != '' ) ? route.path : '/';
 					if(verb == 'all'){
 						//console.log('---methods---');
 						//console.log(methods);
 						methods.each(function(method){
-							perm_id = this.create_authorization_permission(method, this.uuid+'_'+route.path);
+							if(!this.options.routes[method])//ommit verbs that have a specific route already
+								perms.push(this.create_authorization_permission(method, this.uuid+'_'+route.path));
 						}.bind(this));
 					}
 					else{
-						perm_id = this.create_authorization_permission(verb, this.uuid+'_'+route.path);
-						
+						perms.push(this.create_authorization_permission(verb, this.uuid+'_'+route.path));
 					}
+					
+					this.apply_authorization_permissions(perms);
+					
+					this.apply_authorization_roles_permission(route, perms);
 					
 					//if(route.roles){
 						//route.roles.each(function(role){
@@ -621,6 +628,36 @@ module.exports = new Class({
 		}
 	
   },
+  apply_authorization_roles_permission: function(route, perms){
+		if(route.roles && this.authorization){
+			route.roles.each(function(role){
+				console.log('---route.role---');
+				console.log(role);
+				console.log(this.authorization.getRoles()[role]);
+				console.log(perms);
+				
+				if(this.authorization.getRoles()[role]){
+					perms.each(function(perm){
+						console.log('---route.role.perm---');
+						console.log(perm.getID());
+						this.authorization.getRoles()[role].addPermission(perm);
+					}.bind(this));
+					
+				}
+					
+			}.bind(this));
+		}
+	}.protect(),
+	apply_authorization_permissions: function(perms){
+		var perms_json = [];
+		perms.each(function(perm){
+			if(perm)
+				perms_json.push(perm.toJSON());
+		});
+	
+		if(this.authorization)
+			this.authorization.processRules({permissions: perms_json});
+	}.protect(),
   /**
    * return resource ID
    * 
@@ -632,22 +669,33 @@ module.exports = new Class({
 			//'resource': res,
 			//'id': res+'_'+op
 		//});
-				
+		var perm = null;
 		if(
 			this.authorization &&
 			this.options.authorization &&
 			this.options.authorization.operations_routes !== false
 		){
-			this.authorization.processRules({
-				'permissions': [{
-					'operation': op,
-					'resource': res,
-					'id': res+'_'+op
-				}]
-			});
+			
+			perm = new Rbac.Permission(res+'_'+op);
+			perm.setResource(new Rbac.Resource(res));
+			perm.setOperation(new Rbac.Operation(op));
+			
+			//console.log(perm.toJSON());
+			
+			//this.authorization.processRules(
+				//perm.toJSON()
+			//);
+			//this.authorization.processRules({
+				//'permissions': [{
+					//'operation': op,
+					//'resource': res,
+					//'id': res+'_'+op
+				//}]
+			//});
 		}
 		
-		return res+'_'+op;
+		return perm;
+		
 	}.protect(),
   use: function(mount, app){
 		//console.log('app');
@@ -696,6 +744,12 @@ module.exports = new Class({
   load: function(wrk_dir, options){
 		options = options || {};
 		
+		if(!options.authorization){
+			options = { authorization: {} }
+		}
+		
+		options.authorization.process = this.authorization.getRules();
+		
 		////console.log('load.options');
 		////console.log(options);
 		
@@ -738,12 +792,16 @@ module.exports = new Class({
 								
 								this.fireEvent(this.ON_LOAD_APP, [app, this]);
 								
-								app = new app(options, { authorization: this.authorization });
-								
-								//app.addEvent(this.ON_INIT, function(){
+								//app.addEvent(this.ON_INIT, function(app){
 									//console.log('---app.INIT---');
-									//console.log(this.uuid)
+									//console.log(app.uuid)
 								//}.bind(app));
+								
+								app = new app(options);
+								
+								
+								
+						
 		
 								/*////console.log('mootols_app.params:');
 								////console.log(Object.clone(instance.params));*/
@@ -786,12 +844,14 @@ module.exports = new Class({
 						
 						this.fireEvent(this.ON_LOAD_APP, [app, this]);
 						
-						app = new app(options, { authorization: this.authorization });
-						
 						//app.addEvent(this.ON_INIT, function(){
 							//console.log('---app.INIT---');
 							//console.log(this.uuid)
 						//}.bind(app));
+						
+						app = new app(options);
+						
+				
 		
 						//app = instance.express();
 						//id = (instance.id) ? instance.id : id;
