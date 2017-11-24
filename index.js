@@ -190,21 +190,21 @@ module.exports = new Class({
 	},
   },
   initialize: function(options){
-		//console.log('----parent----');
-		//console.log(extra);
+		////console.log('----parent----');
+		////console.log(extra);
 		//this.addEvent(this.ON_INIT_AUTHORIZATION, function(){
-			//console.log('---this.ON_INIT_AUTHORIZATION---');
-			//console.log(this.uuid)
+			////console.log('---this.ON_INIT_AUTHORIZATION---');
+			////console.log(this.uuid)
 		//}.bind(this));
 		
 		//this.addEvent(this.ON_BEFORE_ROUTES, function(){
-			//console.log('---this.ON_BEFORE_ROUTES---');
-			//console.log(this.uuid)
+			////console.log('---this.ON_BEFORE_ROUTES---');
+			////console.log(this.uuid)
 		//}.bind(this));
 		
 		//this.addEvent(this.ON_BEFORE_API_ROUTES, function(){
-			//console.log('---this.ON_BEFORE_API_ROUTES---');
-			//console.log(this.uuid)
+			////console.log('---this.ON_BEFORE_API_ROUTES---');
+			////console.log(this.uuid)
 		//}.bind(this));
 		
 		
@@ -212,9 +212,9 @@ module.exports = new Class({
 		
 		this.uuid = uuidv5(this.options.path, uuidv5.URL);
 		
-		//console.log('----UUID----');
-		//console.log(this.options.path);
-		//console.log(this.uuid);
+		////console.log('----UUID----');
+		////console.log(this.options.path);
+		////console.log(this.uuid);
 		
 		var app = express();
 		this.app = app;
@@ -371,12 +371,12 @@ module.exports = new Class({
 					this.authorization = authorization;
 					
 					if(this.options.authorization.process){
-						console.log('----this.options.authorization.process---');
+						//console.log('----this.options.authorization.process---');
 						this.authorization.processRules(
 							this.options.authorization.process
 						);
 					}
-					//console.log(this.authorization.getRoles());
+					////console.log(this.authorization.getRoles());
 					//if(this.options.authorization.init !== false){
 					
 						//throw new Error('revisar el problema de como se inicia la session,'+
@@ -476,7 +476,7 @@ module.exports = new Class({
 					
 					var callbacks = [];
 					route.callbacks.each(function(fn){
-						////console.log('apply_api_routes this[func]: '+fn);
+						//////console.log('apply_api_routes this[func]: '+fn);
 						
 						//if(content_type != ''){
 							//~ callbacks.push(this.check_content_type_api.bind(this));
@@ -495,7 +495,7 @@ module.exports = new Class({
 						
 					}.bind(this));
 					
-					//console.log('api path '+path);
+					////console.log('api path '+path);
 					
 					var usedPath = [];
 					if(api.force_versioned_path){//route only work on api-version path
@@ -513,12 +513,27 @@ module.exports = new Class({
 					
 					var perms = [];
 					usedPath.each(function(path){
-						//if(path == '')
-							//path = '/';
+						//if(path == '/')
+							//path = '';
 							
 						if(verb == 'all'){
 							methods.each(function(method){
-								if(!api.routes[method])//ommit verbs that have a specific route already
+								var path_found = false;
+								if(api.routes[method]){
+									path_found = api.routes[method].every(function(item){
+										if(item['path'] == '')
+											item['path'] = '/';
+											
+											return item['path'] == path;
+									});
+									
+								}
+									
+								//console.log(api.routes[method]);
+								//console.log(path);
+								//console.log(path_found);
+								
+								if(!api.routes[method] || !path_found)//ommit verbs that have a specific route already
 									perms.push(this.create_authorization_permission(method, this.uuid+'_'+path));
 									
 							}.bind(this));
@@ -578,12 +593,12 @@ module.exports = new Class({
 					//var path = app.path + route.path;
 					content_type = (typeof(route.content_type) !== "undefined") ? route.content_type : content_type;
 				
-					////console.log('specific route content-type: '+content_type);	
+					//////console.log('specific route content-type: '+content_type);	
 				
 					var callbacks = [];
 					route.callbacks.each(function(fn){
 						
-						//console.log('rote function: ' + fn);
+						////console.log('rote function: ' + fn);
 						
 						if(content_type != ''){
 							callbacks.push(this.check_content_type.bind(this, this[fn].bind(this), content_type));
@@ -599,13 +614,31 @@ module.exports = new Class({
 					app[verb](route.path, callbacks);
 					
 					var perms = [];
+					var routes = this.options.routes;
 					//var path = (route.path != '' ) ? route.path : '/';
 					if(verb == 'all'){
-						//console.log('---methods---');
-						//console.log(methods);
+						
 						methods.each(function(method){
-							if(!this.options.routes[method])//ommit verbs that have a specific route already
+							var path_found = false;
+							if(routes[method]){
+								path_found = routes[method].every(function(item){
+									if(item['path'] == '')
+										item['path'] = '/';
+										
+										return item['path'] == path;
+								});
+								
+							}
+								
+							//console.log(routes[method]);
+							//console.log(path);
+							//console.log(path_found);
+								
+							//if(!this.options.routes[method])//ommit verbs that have a specific route already
+							if( !routes[method] || !path_found ){//ommit verbs that have a specific route already
 								perms.push(this.create_authorization_permission(method, this.uuid+'_'+route.path));
+							}
+							
 						}.bind(this));
 					}
 					else{
@@ -618,7 +651,7 @@ module.exports = new Class({
 					
 					//if(route.roles){
 						//route.roles.each(function(role){
-							//console.log('---route.role---');
+							////console.log('---route.role---');
 						//});
 					//}
 
@@ -631,15 +664,15 @@ module.exports = new Class({
   apply_authorization_roles_permission: function(route, perms){
 		if(route.roles && this.authorization){
 			route.roles.each(function(role){
-				console.log('---route.role---');
-				console.log(role);
-				console.log(this.authorization.getRoles()[role]);
-				console.log(perms);
+				//console.log('---route.role---');
+				//console.log(role);
+				//console.log(this.authorization.getRoles()[role]);
+				//console.log(perms);
 				
 				if(this.authorization.getRoles()[role]){
 					perms.each(function(perm){
-						console.log('---route.role.perm---');
-						console.log(perm.getID());
+						//console.log('---route.role.perm---');
+						//console.log(perm.getID());
 						this.authorization.getRoles()[role].addPermission(perm);
 					}.bind(this));
 					
@@ -663,8 +696,8 @@ module.exports = new Class({
    * 
    * */
   create_authorization_permission: function(op, res){
-		//console.log('creating...');
-		//console.log({
+		////console.log('creating...');
+		////console.log({
 			//'operation': op,
 			//'resource': res,
 			//'id': res+'_'+op
@@ -680,7 +713,7 @@ module.exports = new Class({
 			perm.setResource(new Rbac.Resource(res));
 			perm.setOperation(new Rbac.Operation(op));
 			
-			//console.log(perm.toJSON());
+			////console.log(perm.toJSON());
 			
 			//this.authorization.processRules(
 				//perm.toJSON()
@@ -698,8 +731,8 @@ module.exports = new Class({
 		
 	}.protect(),
   use: function(mount, app){
-		//console.log('app');
-		//console.log(typeOf(app));
+		////console.log('app');
+		////console.log(typeOf(app));
 		
 		this.fireEvent(this.ON_USE, [mount, app, this]);
 		
@@ -710,8 +743,8 @@ module.exports = new Class({
 			app = new app({}, { authorization: this.authorization });
 		
 		if(typeOf(app) == 'object'){
-			////console.log('extend_app.authorization');
-			////console.log(app.options.authorization);
+			//////console.log('extend_app.authorization');
+			//////console.log(app.options.authorization);
 			
 			//if(this.authentication && !app.authentication){
 				//app.authentication = this.authentication;
@@ -750,8 +783,8 @@ module.exports = new Class({
 		
 		options.authorization.process = this.authorization.getRules();
 		
-		////console.log('load.options');
-		////console.log(options);
+		//////console.log('load.options');
+		//////console.log(options);
 		
 		fs.readdirSync(wrk_dir).forEach(function(file) {
 
@@ -759,16 +792,16 @@ module.exports = new Class({
 			
 			
 			if(! (file.charAt(0) == '.')){//ommit 'hiden' files
-				////console.log('-------');
+				//////console.log('-------');
 				
-				////console.log('app load: '+ file);
+				//////console.log('app load: '+ file);
 				var app = null;
 				var id = '';//app id
 				var mount = '';
 				
 				if(fs.statSync(full_path).isDirectory() == true){//apps inside dir
 					
-					////console.log('dir app: '+full_path);
+					//////console.log('dir app: '+full_path);
 					
 					var dir = file;//is dir
 					
@@ -776,7 +809,7 @@ module.exports = new Class({
 						
 						if(path.extname(file) == '.js' && ! (file.charAt(0) == '.')){
 							
-							////console.log('app load js: '+ file);
+							//////console.log('app load js: '+ file);
 							app = require(path.join(full_path, file));
 							
 							if(file == 'index.js'){
@@ -788,13 +821,13 @@ module.exports = new Class({
 							}
 							
 							if(typeOf(app) == 'class'){//mootools class
-								console.log('class app');
+								//console.log('class app');
 								
 								this.fireEvent(this.ON_LOAD_APP, [app, this]);
 								
 								//app.addEvent(this.ON_INIT, function(app){
-									//console.log('---app.INIT---');
-									//console.log(app.uuid)
+									////console.log('---app.INIT---');
+									////console.log(app.uuid)
 								//}.bind(app));
 								
 								app = new app(options);
@@ -803,15 +836,15 @@ module.exports = new Class({
 								
 						
 		
-								/*////console.log('mootols_app.params:');
-								////console.log(Object.clone(instance.params));*/
+								/*//////console.log('mootols_app.params:');
+								//////console.log(Object.clone(instance.params));*/
 								
 								//app = instance.express();
 								//id = (instance.id) ? instance.id : id;
 								//apps[app.locals.id || id]['app'] = app;
 							}
 							else{//nodejs module
-								////console.log('express app...nothing to do');
+								//////console.log('express app...nothing to do');
 							}
 							
 							mount = '/'+mount;
@@ -826,8 +859,8 @@ module.exports = new Class({
 
 				}
 				else if(path.extname( file ) == '.js'){// single js apps
-					////console.log('file app: '+full_path);
-					////console.log('basename: '+path.basename(file, '.js'));
+					//////console.log('file app: '+full_path);
+					//////console.log('basename: '+path.basename(file, '.js'));
 					
 					app = require(full_path);
 					id = path.basename(file, '.js');
@@ -840,13 +873,13 @@ module.exports = new Class({
 					}
 					
 					if(typeOf(app) == 'class'){//mootools class
-						console.log('class app');
+						//console.log('class app');
 						
 						this.fireEvent(this.ON_LOAD_APP, [app, this]);
 						
 						//app.addEvent(this.ON_INIT, function(){
-							//console.log('---app.INIT---');
-							//console.log(this.uuid)
+							////console.log('---app.INIT---');
+							////console.log(this.uuid)
 						//}.bind(app));
 						
 						app = new app(options);
@@ -857,7 +890,7 @@ module.exports = new Class({
 						//id = (instance.id) ? instance.id : id;
 					}
 					else{//nodejs module
-						////console.log('express app...nothing to do');
+						//////console.log('express app...nothing to do');
 					}
 					
 					this.use(mount, app);
@@ -925,8 +958,8 @@ module.exports = new Class({
 	//required for 'check_authentication', should be 'implement' injected on another module, auto-loaded by authentication?
 	500: function(req, res, next, err){
 		
-		/*console.log('500');
-		console.log(err);*/
+		//console.log('500');
+		//console.log(err);
 		
 		res.status(500);
 		
