@@ -267,7 +267,7 @@ module.exports = new Class({
 			else{
 				sess_middleware = session(this.options.session);
 			}
-				
+							
 			app.use(sess_middleware);
 		}
 		/**
@@ -342,6 +342,10 @@ module.exports = new Class({
 		 if(this.options.authorization){
 			 var authorization = null;
 			 
+			 //console.log('----typeof(his.options.authorization)---');
+			 //console.log(typeof(this.options.authorization));
+			 //console.log(this.options.authorization);
+			 
 			 if(typeof(this.options.authorization) == 'class'){
 				 authorization = new this.options.authorization({});
 				 this.options.authorization = {};
@@ -368,22 +372,26 @@ module.exports = new Class({
 			
 			if(authorization){
 				//if(this.options.authorization.init !== false){
-					this.authorization = authorization;
 					
 					if(this.options.authorization.process){
 						//console.log('----this.options.authorization.process---');
-						this.authorization.processRules(
+						authorization.processRules(
 							this.options.authorization.process
 						);
 					}
-					////console.log(this.authorization.getRoles());
+					
+					this.authorization = authorization;
+					app.use(this.authorization.session());
+					
+					//console.log('--ROLES---')
+					//console.log(this.authorization.getRoles());
 					//if(this.options.authorization.init !== false){
 					
 						//throw new Error('revisar el problema de como se inicia la session,'+
 						//"\n ya que ahora si voy primero a /test se queda siempre como anon, "+
 						//"\n hasta q me voy a / y cambia a admin (en /test tambien)\n"
 						//);
-						app.use(this.authorization.session());
+						//app.use(this.authorization.session());
 					//}
 				//else{
 					//this._authorization = authorization;
@@ -778,10 +786,21 @@ module.exports = new Class({
 		options = options || {};
 		
 		if(!options.authorization){
-			options = { authorization: {} }
+			options.authorization = {};
 		}
 		
+		/**
+		 * subapps will inherit app rbac rules
+		 * 
+		 * */
 		options.authorization.process = this.authorization.getRules();
+		
+		/**
+		 * subapps will re-use main app session 
+		 * */
+		if(!options.session){
+			options.session = this.session;
+		}
 		
 		//////console.log('load.options');
 		//////console.log(options);
