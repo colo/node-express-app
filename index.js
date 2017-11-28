@@ -34,160 +34,167 @@ module.exports = new Class({
   
   app: null,
   logger: null,
+  session: null,
   authorization:null,
   authentication: null,
   uuid: null,
   
-  options: {
-	  
-	id: '',
-	path: '',
-	
-	//logs : { 
-		//path: './logs' 
-	//},
-	logs: null,
-	
-	session: {
-		//store: new SessionMemoryStore,
-		//proxy: true,
-		//cookie: { path: '/', httpOnly: true, maxAge: null },
-		//cookie : { secure : false, maxAge : (4 * 60 * 60 * 1000) }, // 4 hours
-		//session: {store: null, proxy: true, cookie: { path: '/', httpOnly: true, maxAge: null }, secret: 'keyboard cat'},
-		cookie: { path: '/', httpOnly: true, maxAge: null, secure: false },
-		secret: 'keyboard cat',
-		resave: true,
-		saveUninitialized: true
-	},
-	
-	authentication: null,
-	
-	//authentication: {
-		//users : [],
-		//init: true
-	//},
-	
-	/**
-	 * authorization: {
-	 * 	config: path.join(__dirname,'./rbac.json'),
-	 * 	process: extra rules loaded after config
-	 * 	- init: true, //set false for not auto-init
-	 * 	operations_routes: true 
-	 * 		create operations based en http verbs on your routes (GET|POST|PUT|...)
-	 * 		& resources based on uuid_path
-	 * },
-	* */
-	
-	authorization: null,
-	
-	params: {	  
-	},
-	
-	/**
-	 * @content_type regex to restric allowed req.headers['content-type'], if undefined or '', allow all
-	 * can be nested inside each route
-	 * http://stackoverflow.com/questions/23190659/expressjs-limit-acceptable-content-types
-	* */
-	content_type: /text\/plain/,
-	
-	routes: {
+	options: {
 		
 		/**
-		 *
-		 * 
-		get: [
-			{
-				path: '/:param',
-				callbacks: ['check_authentication', 'check_authorization', 'get'],
-				content_type: /text\/plain/,
-			},
-		],
-		post: [
-		  {
-			path: '',
-			callbacks: ['', 'post']
-		  },
-		],
-		all: [
-		  {
-			path: '',
-			callbacks: ['', 'get']
-		  },
-		]
-		* 
+		 * array of express-middlewares to .use()
+		 * middlewares: [cors(options), helmet(options)...]
+		 * */
+		middlewares: [],
+		
+		id: '',
+		path: '',
+		
+		//logs : { 
+			//path: './logs' 
+		//},
+		logs: null,
+		
+		session: {
+			//store: new SessionMemoryStore,
+			//proxy: true,
+			//cookie: { path: '/', httpOnly: true, maxAge: null },
+			//cookie : { secure : false, maxAge : (4 * 60 * 60 * 1000) }, // 4 hours
+			//session: {store: null, proxy: true, cookie: { path: '/', httpOnly: true, maxAge: null }, secret: 'keyboard cat'},
+			cookie: { path: '/', httpOnly: true, maxAge: null, secure: false },
+			secret: 'keyboard cat',
+			resave: true,
+			saveUninitialized: true
+		},
+		
+		authentication: null,
+		
+		//authentication: {
+			//users : [],
+			//init: true
+		//},
+		
+		/**
+		 * authorization: {
+		 * 	config: path.join(__dirname,'./rbac.json'),
+		 * 	process: extra rules loaded after config
+		 * 	- init: true, //set false for not auto-init
+		 * 	operations_routes: true 
+		 * 		create operations based en http verbs on your routes (GET|POST|PUT|...)
+		 * 		& resources based on uuid_path
+		 * },
 		* */
-	},
-	
-	api: {
+		
+		authorization: null,
+		
+		params: {	  
+		},
 		
 		/**
 		 * @content_type regex to restric allowed req.headers['content-type'], if undefined or '', allow all
 		 * can be nested inside each route
 		 * http://stackoverflow.com/questions/23190659/expressjs-limit-acceptable-content-types
 		* */
-		content_type: /^application\/(?:x-www-form-urlencoded|x-.*\+json|json)(?:[\s;]|$)/,
-		
-		//path: '/api',
-		path: '',
-		
-		version: '0.0.0',
-		
-		versioned_path: false, //default false
-		
-		force_versioned_path: true, //default true, if false & version_path true, there would be 2 routes, filter with content-type
-		
-		accept_header: 'accept-version',
+		content_type: /text\/plain/,
 		
 		routes: {
+			
 			/**
+			 *
 			 * 
 			get: [
 				{
-				path: '',
-				callbacks: ['get_api'],
-				content_type: /^application\/(?:x-www-form-urlencoded|x-.*\+json|json)(?:[\s;]|$)/,
-				//version: '1.0.1',
-				},
-				{
-				path: ':service_action',
-				callbacks: ['get_api'],
-				content_type: /^application\/(?:x-www-form-urlencoded|x-.*\+json|json)(?:[\s;]|$)/,
-				version: '2.0.0',
-				},
-				{
-				path: ':service_action',
-				callbacks: ['get_api'],
-				content_type: /^application\/(?:x-www-form-urlencoded|x-.*\+json|json)(?:[\s;]|$)/,
-				version: '1.0.1',
+					path: '/:param',
+					callbacks: ['check_authentication', 'check_authorization', 'get'],
+					content_type: /text\/plain/,
 				},
 			],
 			post: [
-			  {
+				{
 				path: '',
-				callbacks: ['check_authentication', 'post'],
-			  },
+				callbacks: ['', 'post']
+				},
 			],
 			all: [
-			  {
+				{
 				path: '',
-				callbacks: ['get'],
-				version: '',
-			  },
+				callbacks: ['', 'get']
+				},
 			]
 			* 
 			* */
 		},
 		
-		/*doc: {
-			'/': {
-			  type: 'function',
-			  returns: 'array',
-			  description: 'Return an array of registered servers',
-			  example: '{"username":"lbueno","password":"40bd001563085fc35165329ea1ff5c5ecbdbbeef"} / curl -v -L -H "Accept: application/json" -H "Content-type: application/json" -X POST -d \' {"user":"something","password":"app123"}\'  http://localhost:8080/login'
+		api: {
+			
+			/**
+			 * @content_type regex to restric allowed req.headers['content-type'], if undefined or '', allow all
+			 * can be nested inside each route
+			 * http://stackoverflow.com/questions/23190659/expressjs-limit-acceptable-content-types
+			* */
+			content_type: /^application\/(?:x-www-form-urlencoded|x-.*\+json|json)(?:[\s;]|$)/,
+			
+			//path: '/api',
+			path: '',
+			
+			version: '0.0.0',
+			
+			versioned_path: false, //default false
+			
+			force_versioned_path: true, //default true, if false & version_path true, there would be 2 routes, filter with content-type
+			
+			accept_header: 'accept-version',
+			
+			routes: {
+				/**
+				 * 
+				get: [
+					{
+					path: '',
+					callbacks: ['get_api'],
+					content_type: /^application\/(?:x-www-form-urlencoded|x-.*\+json|json)(?:[\s;]|$)/,
+					//version: '1.0.1',
+					},
+					{
+					path: ':service_action',
+					callbacks: ['get_api'],
+					content_type: /^application\/(?:x-www-form-urlencoded|x-.*\+json|json)(?:[\s;]|$)/,
+					version: '2.0.0',
+					},
+					{
+					path: ':service_action',
+					callbacks: ['get_api'],
+					content_type: /^application\/(?:x-www-form-urlencoded|x-.*\+json|json)(?:[\s;]|$)/,
+					version: '1.0.1',
+					},
+				],
+				post: [
+					{
+					path: '',
+					callbacks: ['check_authentication', 'post'],
+					},
+				],
+				all: [
+					{
+					path: '',
+					callbacks: ['get'],
+					version: '',
+					},
+				]
+				* 
+				* */
+			},
+			
+			/*doc: {
+				'/': {
+					type: 'function',
+					returns: 'array',
+					description: 'Return an array of registered servers',
+					example: '{"username":"lbueno","password":"40bd001563085fc35165329ea1ff5c5ecbdbbeef"} / curl -v -L -H "Accept: application/json" -H "Content-type: application/json" -X POST -d \' {"user":"something","password":"app123"}\'  http://localhost:8080/login'
 
-			}
-		},*/
-	},
+				}
+			},*/
+		},
   },
   initialize: function(options){
 		////console.log('----parent----');
@@ -218,6 +225,18 @@ module.exports = new Class({
 		
 		var app = express();
 		this.app = app;
+		
+		//console.log(typeof(this.options.middlewares));
+		//console.log(this.options.middlewares);
+		if(
+			this.options.middlewares != null &&
+			(typeof(this.options.middlewares) == 'array' || typeof(this.options.middlewares) == 'object')
+		){
+			this.options.middlewares.forEach(function(middleware){
+				//console.log(middleware);
+				this.app.use(middleware);
+			}.bind(this));
+		}
 		
 		//app.use(bodyParser.urlencoded({ extended: false }))
 		
@@ -258,17 +277,19 @@ module.exports = new Class({
 		 * **/
 		if(this.options.session){
 			
-			var sess_middleware = null;
+			//var sess_middleware = null;
 			
 			if(typeof(this.options.session) == 'function'){
-				sess_middleware = this.options.session;
+				//console.log('---typeof(this.options.session)---')
+				//console.log(typeof(this.options.session))
+				this.session = this.options.session;
 				this.options.session = {};
 			}
 			else{
-				sess_middleware = session(this.options.session);
+				this.session = session(this.options.session);
 			}
 							
-			app.use(sess_middleware);
+			app.use(this.session);
 		}
 		/**
 		 * session
@@ -801,6 +822,14 @@ module.exports = new Class({
 		if(!options.session){
 			options.session = this.session;
 		}
+		
+		if(!options.middlewares){
+			options.middlewares = this.options.middlewares;
+		}
+		else{
+			options.middlewares.combine(this.options.middlewares);
+		}
+		
 		
 		//////console.log('load.options');
 		//////console.log(options);
