@@ -380,14 +380,12 @@ module.exports = new Class({
 				
 				if(typeof(this.options.authorization.config) == 'string'){
 					//rbac = fs.readFileSync(path.join(__dirname, this.options.authorization.config ), 'ascii');
-					rbac = fs.readFileSync(this.options.authorization.config , 'ascii');
+					rbac = JSON.decode(fs.readFileSync(this.options.authorization.config , 'ascii'));
 					this.options.authorization.config = rbac;
 				}
 				
 				authorization = new Authorization(this, 
-					JSON.decode(
-						rbac
-					)
+					rbac
 				);
 			}
 			
@@ -1022,6 +1020,29 @@ module.exports = new Class({
 
 			'application/json': function(){
 				res.send(err);
+			},
+
+			'default': function() {
+				// log the request and respond with 406
+				res.status(406).send('Not Acceptable '+ err);
+			}
+		});
+	},
+	501: function(req, res, next, err){
+		
+		res.status(501);
+		
+		res.format({
+			'text/plain': function(){
+				res.send(err || 'Not Implemented');
+			},
+
+			'text/html': function(){
+				res.send(err || 'Not Implemented');
+			},
+
+			'application/json': function(){
+				res.send(err || { error: 'Not Implemented' });
 			},
 
 			'default': function() {
