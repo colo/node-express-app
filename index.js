@@ -50,10 +50,16 @@ module.exports = new Class({
 		id: '',
 		path: '',
 		
-		//logs : { 
-			//path: './logs' 
-		//},
-		logs: null,
+		logs: {
+			loggers: {
+				error: null,
+				access: null,
+				profiling: null
+			},
+			
+			path: './',
+
+		},
 		
 		session: {
 			//store: new SessionMemoryStore,
@@ -249,6 +255,9 @@ module.exports = new Class({
 		 *  - start
 		 * **/
 		if(this.options.logs){
+			//console.log('----instance----');
+			//console.log(this.options.logs);
+			
 			if(typeof(this.options.logs) == 'class'){
 				var tmp_class = this.options.logs;
 				this.logger = new tmp_class(this, {});
@@ -258,11 +267,16 @@ module.exports = new Class({
 				this.logger = this.options.logs;
 				this.options.logs = {};
 			}
+			else if(this.options.logs.instance){//winston
+				this.logger = this.options.logs;
+				this.options.logs = {};
+			}
 			else{
 				this.logger = new Logger(this, this.options.logs);
+				app.use(this.logger.access());
 			}
 		
-			app.use(this.logger.access());
+			//console.log(this.logger.instance);
 		}
 		/**
 		 * logger
@@ -507,6 +521,46 @@ module.exports = new Class({
 						
 						//if(content_type != ''){
 							//~ callbacks.push(this.check_content_type_api.bind(this));
+							//callbacks.push(
+								//this.check_content_type.bind(this, 
+									//this.check_accept_version.bind(this, 
+										//this[fn].bind(this),
+										//version),
+								//content_type)
+							//);
+						//}
+						//else{
+							//callbacks.push(this[fn].bind(this));
+						//}
+						
+						if(process.env.PROFILING_ENV && this.logger){
+							var profile = 'ID['+this.options.id+']:METHOD['+verb+']';
+							
+							if(api.force_versioned_path){
+								profile += ':PATH['+versioned_path+']:CALLBACK['+fn+']';
+							}
+							else{
+								profile += ':PATH['+path+']:CALLBACK['+fn+']';
+							}
+							
+							var profiling = function(req, res, next){ 
+								//console.log('---profiling...'+profile);
+								this.profile(profile);
+								this[fn](req, res, next);
+								this.profile(profile);
+								//console.log('---end profiling...'+profile);
+							}.bind(this);
+							
+							callbacks.push(
+								this.check_content_type.bind(this, 
+									this.check_accept_version.bind(this, 
+										profiling,
+										version),
+								content_type)
+							);
+							
+						}
+						else{
 							callbacks.push(
 								this.check_content_type.bind(this, 
 									this.check_accept_version.bind(this, 
@@ -514,15 +568,11 @@ module.exports = new Class({
 										version),
 								content_type)
 							);
-						//}
-						//else{
-							//callbacks.push(this[fn].bind(this));
-						//}
-						
+						}
 						
 					}.bind(this));
 					
-					////console.log('api path '+path);
+					//console.log('api path '+path);
 					
 					var usedPath = [];
 					if(api.force_versioned_path){//route only work on api-version path
@@ -616,7 +666,7 @@ module.exports = new Class({
 				var content_type = (typeof(this.options.content_type) !== "undefined") ? this.options.content_type : '';
 				
 				routes.each(function(route){//each array is a route
-					
+					var path = route.path;
 					//var path = app.path + route.path;
 					content_type = (typeof(route.content_type) !== "undefined") ? route.content_type : content_type;
 				
@@ -625,14 +675,57 @@ module.exports = new Class({
 					var callbacks = [];
 					route.callbacks.each(function(fn){
 						
-						////console.log('rote function: ' + fn);
+						////console.log('route function: ' + fn);
 						
-						if(content_type != ''){
-							callbacks.push(this.check_content_type.bind(this, this[fn].bind(this), content_type));
+						if(process.env.PROFILING_ENV && this.logger){
+							var profile = 'ID['+this.options.id+']:METHOD['+verb+']:PATH['+path+']:CALLBACK['+fn+']';
+							
+							
+							//profile += ':PATH['+path+']:CALLBACK['+fn+']';
+							
+							
+							var profiling = function(req, res, next){ 
+								//console.log('---profiling...'+profile);
+								this.profile(profile);
+								
+								if(content_type != ''){
+									this.check_content_type(this[fn], content_type, req, res, next);
+								}
+								else{
+									this[fn](req, res, next);
+								}
+								
+								this.profile(profile);
+								//console.log('---end profiling...'+profile);
+							}.bind(this);
+							
+							callbacks.push(profiling);
+							
 						}
 						else{
-							callbacks.push(this[fn].bind(this));
+							//callbacks.push(
+								//this.check_content_type.bind(this, 
+									//this.check_accept_version.bind(this, 
+										//this[fn].bind(this),
+										//version),
+								//content_type)
+							//);
+							
+							if(content_type != ''){
+								callbacks.push(this.check_content_type.bind(this, this[fn].bind(this), content_type));
+							}
+							else{
+								callbacks.push(this[fn].bind(this));
+							}
+							
 						}
+						
+						//if(content_type != ''){
+							//callbacks.push(this.check_content_type.bind(this, this[fn].bind(this), content_type));
+						//}
+						//else{
+							//callbacks.push(this[fn].bind(this));
+						//}
 						
 					}.bind(this));
 					
@@ -828,7 +921,12 @@ module.exports = new Class({
 			options.middlewares.combine(this.options.middlewares);
 		}
 		
-		
+		/**
+		 * subapps will re-use main app logger
+		 * */
+		 if(!options.logs)
+			options.logs = this.logger;
+			
 		//////console.log('load.options');
 		//////console.log(options);
 		
