@@ -50,16 +50,17 @@ module.exports = new Class({
 		id: '',
 		path: '',
 		
-		logs: {
-			loggers: {
-				error: null,
-				access: null,
-				profiling: null
-			},
+		//logs: {
+			//loggers: {
+				//error: null,
+				//access: null,
+				//profiling: null
+			//},
 			
-			path: './',
+			//path: './',
 
-		},
+		//},
+		logs: null,
 		
 		session: {
 			//store: new SessionMemoryStore,
@@ -203,6 +204,7 @@ module.exports = new Class({
 		},
   },
   initialize: function(options){
+		//options = options || {};
 		////console.log('----parent----');
 		////console.log(extra);
 		//this.addEvent(this.ON_INIT_AUTHORIZATION, function(){
@@ -220,7 +222,13 @@ module.exports = new Class({
 			////console.log(this.uuid)
 		//}.bind(this));
 		
-		
+		if(options && options.logs && options.logs.instance){//winston
+			//console.log(options.id);
+			//console.log(options.logs.instance.loggers);
+				this.logger = options.logs;
+				options.logs = null;
+		}
+			
 		this.setOptions(options);//override default options
 		
 		this.uuid = uuidv5(this.options.path, uuidv5.URL);
@@ -267,17 +275,26 @@ module.exports = new Class({
 				this.logger = this.options.logs;
 				this.options.logs = {};
 			}
-			else if(this.options.logs.instance){//winston
-				this.logger = this.options.logs;
-				this.options.logs = {};
-			}
+			//else if(this.options.logs.instance){//winston
+				//this.logger = this.options.logs;
+				//this.options.logs = {};
+			//}
 			else{
 				this.logger = new Logger(this, this.options.logs);
-				app.use(this.logger.access());
+				//app.use(this.logger.access());
 			}
-		
+			
+			app.use(this.logger.access());
+			
 			//console.log(this.logger.instance);
 		}
+		
+		if(this.logger)
+			this.logger.extend_app(this);
+		
+		//console.log(this.options.id);
+		//console.log(this.logger);
+			
 		/**
 		 * logger
 		 *  - end
@@ -533,7 +550,13 @@ module.exports = new Class({
 							//callbacks.push(this[fn].bind(this));
 						//}
 						
+						//console.log('---profiling...');
+						//console.log(this.options.id)
+						//console.log(this.logger)
+						
 						if(process.env.PROFILING_ENV && this.logger){
+						
+							
 							var profile = 'ID['+this.options.id+']:METHOD['+verb+']';
 							
 							if(api.force_versioned_path){
@@ -542,6 +565,8 @@ module.exports = new Class({
 							else{
 								profile += ':PATH['+path+']:CALLBACK['+fn+']';
 							}
+							
+							
 							
 							var profiling = function(req, res, next){ 
 								//console.log('---profiling...'+profile);
@@ -897,36 +922,46 @@ module.exports = new Class({
   load: function(wrk_dir, options){
 		options = options || {};
 		
-		if(!options.authorization){
-			options.authorization = {};
-		}
-		
-		/**
-		 * subapps will inherit app rbac rules
-		 * 
-		 * */
-		options.authorization.process = this.authorization.getRules();
-		
-		/**
-		 * subapps will re-use main app session 
-		 * */
-		if(!options.session){
-			options.session = this.session;
-		}
-		
-		if(!options.middlewares){
-			options.middlewares = this.options.middlewares;
-		}
-		else{
-			options.middlewares.combine(this.options.middlewares);
-		}
-		
-		/**
-		 * subapps will re-use main app logger
-		 * */
-		 if(!options.logs)
-			options.logs = this.logger;
+		var get_options = function(options){
 			
+			if(!options.authorization){
+				options.authorization = {};
+			}
+			
+			/**
+			 * subapps will inherit app rbac rules
+			 * 
+			 * */
+			options.authorization.process = this.authorization.getRules();
+			
+			/**
+			 * subapps will re-use main app session 
+			 * */
+			if(!options.session){
+				options.session = this.session;
+			}
+			
+			if(!options.middlewares){
+				options.middlewares = this.options.middlewares;
+			}
+			else{
+				options.middlewares.combine(this.options.middlewares);
+			}
+			
+			/**
+			 * subapps will re-use main app logger
+			 * */
+			//if(!options.logs){
+				//options.logs = this.logger;
+				////options.logs = this.options.logs;
+			//}
+			if(this.logger)	
+				options.logs = this.logger;
+			
+			return options;
+		
+		}.bind(this);
+		
 		//////console.log('load.options');
 		//////console.log(options);
 		
@@ -974,7 +1009,8 @@ module.exports = new Class({
 									////console.log(app.uuid)
 								//}.bind(app));
 								
-								app = new app(options);
+								
+								app = new app(get_options(options));
 								
 								
 								
@@ -1026,7 +1062,8 @@ module.exports = new Class({
 							////console.log(this.uuid)
 						//}.bind(app));
 						
-						app = new app(options);
+						
+						app = new app(get_options(options));
 						
 				
 		
