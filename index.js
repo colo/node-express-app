@@ -242,6 +242,7 @@ module.exports = new Class({
 		
 		//console.log(typeof(this.options.middlewares));
 		//console.log(this.options.middlewares);
+		
 		if(
 			this.options.middlewares != null &&
 			(typeof(this.options.middlewares) == 'array' || typeof(this.options.middlewares) == 'object')
@@ -534,6 +535,7 @@ module.exports = new Class({
 					
 					var callbacks = [];
 					route.callbacks.each(function(fn){
+						var callback = (typeof(fn) == 'function') ? fn : this[fn].bind(this);
 						//////console.log('apply_api_routes this[func]: '+fn);
 						
 						//if(content_type != ''){
@@ -571,7 +573,9 @@ module.exports = new Class({
 							var profiling = function(req, res, next){ 
 								//console.log('---profiling...'+profile);
 								this.profile(profile);
-								this[fn](req, res, next);
+								//this[fn](req, res, next);
+								callback(req, res, next);
+								
 								this.profile(profile);
 								//console.log('---end profiling...'+profile);
 							}.bind(this);
@@ -589,7 +593,8 @@ module.exports = new Class({
 							callbacks.push(
 								this.check_content_type.bind(this, 
 									this.check_accept_version.bind(this, 
-										this[fn].bind(this),
+										//this[fn].bind(this),
+										callback,
 										version),
 								content_type)
 							);
@@ -699,6 +704,7 @@ module.exports = new Class({
 				
 					var callbacks = [];
 					route.callbacks.each(function(fn){
+						var callback = (typeof(fn) == 'function') ? fn : this[fn].bind(this);
 						
 						////console.log('route function: ' + fn);
 						
@@ -714,10 +720,12 @@ module.exports = new Class({
 								this.profile(profile);
 								
 								if(content_type != ''){
-									this.check_content_type(this[fn], content_type, req, res, next);
+									//this.check_content_type(this[fn], content_type, req, res, next);
+									this.check_content_type(callback, content_type, req, res, next);
 								}
 								else{
-									this[fn](req, res, next);
+									//this[fn](req, res, next);
+									callback(req, res, next);
 								}
 								
 								this.profile(profile);
@@ -737,10 +745,12 @@ module.exports = new Class({
 							//);
 							
 							if(content_type != ''){
-								callbacks.push(this.check_content_type.bind(this, this[fn].bind(this), content_type));
+								//callbacks.push(this.check_content_type.bind(this, this[fn].bind(this), content_type));
+								callbacks.push(this.check_content_type.bind(this, callback, content_type));
 							}
 							else{
-								callbacks.push(this[fn].bind(this));
+								//callbacks.push(this[fn].bind(this));
+								callbacks.push(callback);
 							}
 							
 						}
