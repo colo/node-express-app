@@ -19,7 +19,7 @@ var Logger = require('node-express-logger'),
 
 
 
-module.exports = new Class({
+var ExpressApp = new Class({
   Implements: [Options, Events],
   
   ON_LOAD_APP: 'onLoadApp',
@@ -1198,3 +1198,5 @@ module.exports = new Class({
 	},
 	
 });
+
+module.exports = ExpressApp;
