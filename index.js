@@ -18,6 +18,10 @@ var Logger = require('node-express-logger'),
 	Rbac = require('node-rbac');
 
 
+var debug = require('debug')('express-app');
+var debug_events = require('debug')('express-app:Events');
+var debug_internals = require('debug')('express-app:Internals');
+
 
 var ExpressApp = new Class({
   Implements: [Options, Events],
@@ -205,26 +209,26 @@ var ExpressApp = new Class({
   },
   initialize: function(options){
 		//options = options || {};
-		////console.log('----parent----');
-		////console.log(extra);
+		//////console.log('----parent----');
+		//////console.log(extra);
 		//this.addEvent(this.ON_INIT_AUTHORIZATION, function(){
-			////console.log('---this.ON_INIT_AUTHORIZATION---');
-			////console.log(this.uuid)
+			//////console.log('---this.ON_INIT_AUTHORIZATION---');
+			//////console.log(this.uuid)
 		//}.bind(this));
 		
 		//this.addEvent(this.ON_BEFORE_ROUTES, function(){
-			////console.log('---this.ON_BEFORE_ROUTES---');
-			////console.log(this.uuid)
+			//////console.log('---this.ON_BEFORE_ROUTES---');
+			//////console.log(this.uuid)
 		//}.bind(this));
 		
 		//this.addEvent(this.ON_BEFORE_API_ROUTES, function(){
-			////console.log('---this.ON_BEFORE_API_ROUTES---');
-			////console.log(this.uuid)
+			//////console.log('---this.ON_BEFORE_API_ROUTES---');
+			//////console.log(this.uuid)
 		//}.bind(this));
 		
 		if(options && options.logs && options.logs.instance){//winston
-			//console.log(options.id);
-			//console.log(options.logs.instance.loggers);
+			////console.log(options.id);
+			////console.log(options.logs.instance.loggers);
 				this.logger = options.logs;
 				options.logs = null;
 		}
@@ -233,22 +237,22 @@ var ExpressApp = new Class({
 		
 		this.uuid = uuidv5(this.options.path, uuidv5.URL);
 		
-		////console.log('----UUID----');
-		////console.log(this.options.path);
-		////console.log(this.uuid);
+		//////console.log('----UUID----');
+		//////console.log(this.options.path);
+		//////console.log(this.uuid);
 		
 		var app = express();
 		this.app = app;
 		
-		//console.log(typeof(this.options.middlewares));
-		//console.log(this.options.middlewares);
+		////console.log(typeof(this.options.middlewares));
+		////console.log(this.options.middlewares);
 		
 		if(
 			this.options.middlewares != null &&
 			(typeof(this.options.middlewares) == 'array' || typeof(this.options.middlewares) == 'object')
 		){
 			this.options.middlewares.forEach(function(middleware){
-				//console.log(middleware);
+				////console.log(middleware);
 				this.app.use(middleware);
 			}.bind(this));
 		}
@@ -264,8 +268,8 @@ var ExpressApp = new Class({
 		 *  - start
 		 * **/
 		if(this.options.logs){
-			//console.log('----instance----');
-			//console.log(this.options.logs);
+			////console.log('----instance----');
+			////console.log(this.options.logs);
 			
 			if(typeof(this.options.logs) == 'class'){
 				var tmp_class = this.options.logs;
@@ -287,14 +291,14 @@ var ExpressApp = new Class({
 			
 			app.use(this.logger.access());
 			
-			//console.log(this.logger.instance);
+			////console.log(this.logger.instance);
 		}
 		
 		if(this.logger)
 			this.logger.extend_app(this);
 		
-		//console.log(this.options.id);
-		//console.log(this.logger);
+		////console.log(this.options.id);
+		////console.log(this.logger);
 			
 		/**
 		 * logger
@@ -312,8 +316,8 @@ var ExpressApp = new Class({
 			//var sess_middleware = null;
 			
 			if(typeof(this.options.session) == 'function'){
-				//console.log('---typeof(this.options.session)---')
-				//console.log(typeof(this.options.session))
+				////console.log('---typeof(this.options.session)---')
+				////console.log(typeof(this.options.session))
 				this.session = this.options.session;
 				this.options.session = {};
 			}
@@ -395,9 +399,9 @@ var ExpressApp = new Class({
 		 if(this.options.authorization){
 			 var authorization = null;
 			 
-			 //console.log('----typeof(his.options.authorization)---');
-			 //console.log(typeof(this.options.authorization));
-			 //console.log(this.options.authorization);
+			 ////console.log('----typeof(his.options.authorization)---');
+			 ////console.log(typeof(this.options.authorization));
+			 ////console.log(this.options.authorization);
 			 
 			 if(typeof(this.options.authorization) == 'class'){
 				 authorization = new this.options.authorization({});
@@ -425,7 +429,7 @@ var ExpressApp = new Class({
 				//if(this.options.authorization.init !== false){
 					
 					if(this.options.authorization.process){
-						//console.log('----this.options.authorization.process---');
+						////console.log('----this.options.authorization.process---');
 						authorization.processRules(
 							this.options.authorization.process
 						);
@@ -434,8 +438,8 @@ var ExpressApp = new Class({
 					this.authorization = authorization;
 					app.use(this.authorization.session());
 					
-					//console.log('--ROLES---')
-					//console.log(this.authorization.getRoles());
+					////console.log('--ROLES---')
+					////console.log(this.authorization.getRoles());
 					//if(this.options.authorization.init !== false){
 					
 						//throw new Error('revisar el problema de como se inicia la session,'+
@@ -481,6 +485,8 @@ var ExpressApp = new Class({
 		
 		
   },
+  log: function(name, type, string){},
+  profile: function(profile){},
 	/**
 	* @params
 	* @todo should rise an Error???
@@ -536,7 +542,7 @@ var ExpressApp = new Class({
 					var callbacks = [];
 					route.callbacks.each(function(fn){
 						var callback = (typeof(fn) == 'function') ? fn : this[fn].bind(this);
-						//////console.log('apply_api_routes this[func]: '+fn);
+						////////console.log('apply_api_routes this[func]: '+fn);
 						
 						//if(content_type != ''){
 							//~ callbacks.push(this.check_content_type_api.bind(this));
@@ -552,9 +558,9 @@ var ExpressApp = new Class({
 							//callbacks.push(this[fn].bind(this));
 						//}
 						
-						//console.log('---profiling...');
-						//console.log(this.options.id)
-						//console.log(this.logger)
+						////console.log('---profiling...');
+						////console.log(this.options.id)
+						////console.log(this.logger)
 						
 						if(process.env.PROFILING_ENV && this.logger){
 						
@@ -571,13 +577,13 @@ var ExpressApp = new Class({
 							
 							
 							var profiling = function(req, res, next){ 
-								//console.log('---profiling...'+profile);
+								////console.log('---profiling...'+profile);
 								this.profile(profile);
 								//this[fn](req, res, next);
 								callback(req, res, next);
 								
 								this.profile(profile);
-								//console.log('---end profiling...'+profile);
+								////console.log('---end profiling...'+profile);
 							}.bind(this);
 							
 							callbacks.push(
@@ -602,7 +608,7 @@ var ExpressApp = new Class({
 						
 					}.bind(this));
 					
-					//console.log('api path '+path);
+					////console.log('api path '+path);
 					
 					var usedPath = [];
 					if(api.force_versioned_path){//route only work on api-version path
@@ -636,9 +642,9 @@ var ExpressApp = new Class({
 									
 								}
 									
-								//console.log(api.routes[method]);
-								//console.log(path);
-								//console.log(path_found);
+								////console.log(api.routes[method]);
+								////console.log(path);
+								////console.log(path_found);
 								
 								if(!api.routes[method] || !path_found)//ommit verbs that have a specific route already
 									perms.push(this.create_authorization_permission(method, this.uuid+'_'+path));
@@ -700,13 +706,13 @@ var ExpressApp = new Class({
 					//var path = app.path + route.path;
 					content_type = (typeof(route.content_type) !== "undefined") ? route.content_type : content_type;
 				
-					//////console.log('specific route content-type: '+content_type);	
+					////////console.log('specific route content-type: '+content_type);	
 				
 					var callbacks = [];
 					route.callbacks.each(function(fn){
 						var callback = (typeof(fn) == 'function') ? fn : this[fn].bind(this);
 						
-						////console.log('route function: ' + fn);
+						//////console.log('route function: ' + fn);
 						
 						if(process.env.PROFILING_ENV && this.logger){
 							var profile = 'ID['+this.options.id+']:METHOD['+verb+']:PATH['+path+']:CALLBACK['+fn+']';
@@ -716,7 +722,7 @@ var ExpressApp = new Class({
 							
 							
 							var profiling = function(req, res, next){ 
-								//console.log('---profiling...'+profile);
+								////console.log('---profiling...'+profile);
 								this.profile(profile);
 								
 								if(content_type != ''){
@@ -729,7 +735,7 @@ var ExpressApp = new Class({
 								}
 								
 								this.profile(profile);
-								//console.log('---end profiling...'+profile);
+								////console.log('---end profiling...'+profile);
 							}.bind(this);
 							
 							callbacks.push(profiling);
@@ -785,9 +791,9 @@ var ExpressApp = new Class({
 								
 							}
 								
-							//console.log(routes[method]);
-							//console.log(path);
-							//console.log(path_found);
+							////console.log(routes[method]);
+							////console.log(path);
+							////console.log(path_found);
 								
 							//if(!this.options.routes[method])//ommit verbs that have a specific route already
 							if( !routes[method] || !path_found ){//ommit verbs that have a specific route already
@@ -806,7 +812,7 @@ var ExpressApp = new Class({
 					
 					//if(route.roles){
 						//route.roles.each(function(role){
-							////console.log('---route.role---');
+							//////console.log('---route.role---');
 						//});
 					//}
 
@@ -819,15 +825,15 @@ var ExpressApp = new Class({
   apply_authorization_roles_permission: function(route, perms){
 		if(route.roles && this.authorization){
 			route.roles.each(function(role){
-				//console.log('---route.role---');
-				//console.log(role);
-				//console.log(this.authorization.getRoles()[role]);
-				//console.log(perms);
+				////console.log('---route.role---');
+				////console.log(role);
+				////console.log(this.authorization.getRoles()[role]);
+				////console.log(perms);
 				
 				if(this.authorization.getRoles()[role]){
 					perms.each(function(perm){
-						//console.log('---route.role.perm---');
-						//console.log(perm.getID());
+						////console.log('---route.role.perm---');
+						////console.log(perm.getID());
 						this.authorization.getRoles()[role].addPermission(perm);
 					}.bind(this));
 					
@@ -851,8 +857,8 @@ var ExpressApp = new Class({
    * 
    * */
   create_authorization_permission: function(op, res){
-		////console.log('creating...');
-		////console.log({
+		//////console.log('creating...');
+		//////console.log({
 			//'operation': op,
 			//'resource': res,
 			//'id': res+'_'+op
@@ -868,7 +874,7 @@ var ExpressApp = new Class({
 			perm.setResource(new Rbac.Resource(res));
 			perm.setOperation(new Rbac.Operation(op));
 			
-			////console.log(perm.toJSON());
+			//////console.log(perm.toJSON());
 			
 			//this.authorization.processRules(
 				//perm.toJSON()
@@ -886,8 +892,8 @@ var ExpressApp = new Class({
 		
 	}.protect(),
   use: function(mount, app){
-		////console.log('app');
-		////console.log(typeOf(app));
+		//////console.log('app');
+		//////console.log(typeOf(app));
 		
 		this.fireEvent(this.ON_USE, [mount, app, this]);
 		
@@ -898,8 +904,8 @@ var ExpressApp = new Class({
 			app = new app({}, { authorization: this.authorization });
 		
 		if(typeOf(app) == 'object'){
-			//////console.log('extend_app.authorization');
-			//////console.log(app.options.authorization);
+			////////console.log('extend_app.authorization');
+			////////console.log(app.options.authorization);
 			
 			//if(this.authentication && !app.authentication){
 				//app.authentication = this.authentication;
@@ -942,7 +948,8 @@ var ExpressApp = new Class({
 			 * subapps will inherit app rbac rules
 			 * 
 			 * */
-			options.authorization.process = this.authorization.getRules();
+			if(this.authorization)
+				options.authorization.process = this.authorization.getRules();
 			
 			/**
 			 * subapps will re-use main app session 
@@ -972,8 +979,8 @@ var ExpressApp = new Class({
 		
 		}.bind(this);
 		
-		//////console.log('load.options');
-		//////console.log(options);
+		////////console.log('load.options');
+		////////console.log(options);
 		
 		fs.readdirSync(wrk_dir).forEach(function(file) {
 
@@ -981,16 +988,16 @@ var ExpressApp = new Class({
 			
 			
 			if(! (file.charAt(0) == '.')){//ommit 'hiden' files
-				//////console.log('-------');
+				////////console.log('-------');
 				
-				//////console.log('app load: '+ file);
+				////////console.log('app load: '+ file);
 				var app = null;
 				var id = '';//app id
 				var mount = '';
 				
 				if(fs.statSync(full_path).isDirectory() == true){//apps inside dir
 					
-					//////console.log('dir app: '+full_path);
+					////////console.log('dir app: '+full_path);
 					
 					var dir = file;//is dir
 					
@@ -998,8 +1005,10 @@ var ExpressApp = new Class({
 						
 						if(path.extname(file) == '.js' && ! (file.charAt(0) == '.')){
 							
-							//////console.log('app load js: '+ file);
+							////////console.log('app load js: '+ file);
 							app = require(path.join(full_path, file));
+							
+							debug_internals('typeof %o', typeof(app));
 							
 							if(file == 'index.js'){
 								mount = id = dir;
@@ -1010,13 +1019,13 @@ var ExpressApp = new Class({
 							}
 							
 							if(typeOf(app) == 'class'){//mootools class
-								//console.log('class app');
+								////console.log('class app');
 								
 								this.fireEvent(this.ON_LOAD_APP, [app, this]);
 								
 								//app.addEvent(this.ON_INIT, function(app){
-									////console.log('---app.INIT---');
-									////console.log(app.uuid)
+									//////console.log('---app.INIT---');
+									//////console.log(app.uuid)
 								//}.bind(app));
 								
 								
@@ -1026,15 +1035,15 @@ var ExpressApp = new Class({
 								
 						
 		
-								/*//////console.log('mootols_app.params:');
-								//////console.log(Object.clone(instance.params));*/
+								/*////////console.log('mootols_app.params:');
+								////////console.log(Object.clone(instance.params));*/
 								
 								//app = instance.express();
 								//id = (instance.id) ? instance.id : id;
 								//apps[app.locals.id || id]['app'] = app;
 							}
 							else{//nodejs module
-								//////console.log('express app...nothing to do');
+								////////console.log('express app...nothing to do');
 							}
 							
 							mount = '/'+mount;
@@ -1049,10 +1058,13 @@ var ExpressApp = new Class({
 
 				}
 				else if(path.extname( file ) == '.js'){// single js apps
-					//////console.log('file app: '+full_path);
-					//////console.log('basename: '+path.basename(file, '.js'));
+					////////console.log('file app: '+full_path);
+					////////console.log('basename: '+path.basename(file, '.js'));
 					
 					app = require(full_path);
+					
+					debug_internals('typeof %o', typeof(app));
+					
 					id = path.basename(file, '.js');
 					
 					if(file == 'index.js'){
@@ -1063,13 +1075,13 @@ var ExpressApp = new Class({
 					}
 					
 					if(typeOf(app) == 'class'){//mootools class
-						//console.log('class app');
+						////console.log('class app');
 						
 						this.fireEvent(this.ON_LOAD_APP, [app, this]);
 						
 						//app.addEvent(this.ON_INIT, function(){
-							////console.log('---app.INIT---');
-							////console.log(this.uuid)
+							//////console.log('---app.INIT---');
+							//////console.log(this.uuid)
 						//}.bind(app));
 						
 						
@@ -1081,7 +1093,7 @@ var ExpressApp = new Class({
 						//id = (instance.id) ? instance.id : id;
 					}
 					else{//nodejs module
-						//////console.log('express app...nothing to do');
+						////////console.log('express app...nothing to do');
 					}
 					
 					this.use(mount, app);
@@ -1149,8 +1161,8 @@ var ExpressApp = new Class({
 	//required for 'check_authentication', should be 'implement' injected on another module, auto-loaded by authentication?
 	500: function(req, res, next, err){
 		
-		//console.log('500');
-		//console.log(err);
+		////console.log('500');
+		////console.log(err);
 		
 		res.status(500);
 		
