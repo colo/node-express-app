@@ -1,5 +1,5 @@
 {
-  "name": "login",
+  "name": "node-express-app",
   "version": "0.0.1",
   "description": "Login App",
   "author": {
@@ -14,6 +14,9 @@
     "express": "^4.13.4",
     "express-session": "^1.13.0",
     "mootools": "^1.5.2",
+    "node-express-authentication": "git+https://github.com/colo/node-express-authentication.git",
+    "node-express-authorization": "git+https://github.com/colo/node-express-authorization.git",
+    "node-express-logger": "git+https://github.com/colo/node-express-logger.git",
     "semver": "^5.1.0",
     "uuid": "^3.1.0"
   },
