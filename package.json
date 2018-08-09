@@ -11,6 +11,7 @@
     "node": ">= 0.10.21"
   },
   "dependencies": {
+    "async": "^2.6.1",
     "express": "^4.13.4",
     "express-session": "^1.13.0",
     "mootools": "^1.5.2",
