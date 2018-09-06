@@ -246,6 +246,9 @@ var ExpressApp = new Class({
 		if(!this.options.app || this.options.app == null){
 			this.app = express();
 		}
+		else{
+			this.app = this.options.app;
+		}
 		
 		let middlewares = []
 		////console.log(typeof(this.options.middlewares));
