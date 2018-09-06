@@ -243,7 +243,7 @@ var ExpressApp = new Class({
 		//////console.log(this.options.path);
 		//////console.log(this.uuid);
 		
-		if(!this.app || this.app == null){
+		if(!this.options.app || this.options.app == null){
 			this.app = express();
 		}
 		
@@ -999,8 +999,8 @@ var ExpressApp = new Class({
 			if(this.logger)
 				options.logs = this.logger;
 			
-			//if(this.app)
-				//options.app = this.app;
+			if(this.app)
+				options.app = this.app;
 				
 			return options;
 
