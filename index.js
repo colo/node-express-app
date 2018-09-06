@@ -45,7 +45,8 @@ var ExpressApp = new Class({
   uuid: null,
 
 	options: {
-
+		app: undefined, //express
+		
 		/**
 		 * array of express-middlewares to .use()
 		 * middlewares: [cors(options), helmet(options)...]
@@ -241,9 +242,11 @@ var ExpressApp = new Class({
 		//////console.log('----UUID----');
 		//////console.log(this.options.path);
 		//////console.log(this.uuid);
-
-		var app = express();
-		this.app = app;
+		
+		if(!this.options.app || this.options.app == null){
+			this.app = express();
+		}
+		
 		let middlewares = []
 		////console.log(typeof(this.options.middlewares));
 		////console.log(this.options.middlewares);
@@ -995,7 +998,10 @@ var ExpressApp = new Class({
 			//}
 			if(this.logger)
 				options.logs = this.logger;
-
+			
+			if(this.app)
+				options.app = this.app;
+				
 			return options;
 
 		}.bind(this);
