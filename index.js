@@ -1002,8 +1002,8 @@ var ExpressApp = new Class({
 			if(this.logger)
 				options.logs = this.logger;
 			
-			if(this.app)
-				options.app = this.app;
+			//if(this.app)
+				//options.app = this.app;
 				
 			return options;
 
