@@ -24,7 +24,7 @@ let extended = function(EApp){
       this.io.on('connection', function(socket){ this.socket(socket) }.bind(this))
     },
 		socket: function(socket){
-      // //console.log('socket')
+
       if(this.options.io){
         if(this.options.io.rooms){
 
@@ -52,7 +52,9 @@ let extended = function(EApp){
 
   			Object.each(this.options.io.routes, function(routes, message){
 
+          console.log('message', message)
 
+          let route_index = 0
   				routes.each(function(route){//each array is a route
   					var path = route.path;
 
@@ -60,8 +62,8 @@ let extended = function(EApp){
             let prev = null;
 
             for(let i = route.callbacks.length - 1; i >= 0 ; i--){
-              let fn = route.callbacks[i]
-              var callback = (typeof(fn) == 'function') ? fn : this[fn].bind(this);
+              let callback = this.__callback(route.callbacks[i], message)
+
 
         			if(i == route.callbacks.length - 1){
         				//console.log('_apply_filters last')
@@ -75,8 +77,7 @@ let extended = function(EApp){
         				else{
         					let self = this
         					current = function(socket){
-                    let fn = route.callbacks[i]
-                    var callback = (typeof(fn) == 'function') ? fn : this[fn].bind(this);
+                    let callback = this.__callback(route.callbacks[i], message)
         						callback(socket, undefined);
 
         					}.bind(this);
@@ -90,8 +91,7 @@ let extended = function(EApp){
 
         				prev = current;
         				current = function(socket){
-                  let fn = route.callbacks[i]
-                  var callback = (typeof(fn) == 'function') ? fn : this[fn].bind(this);
+                  let callback = this.__callback(route.callbacks[i], message)
 
         					callback(socket, function(socket){
         						prev(socket, undefined);
@@ -112,7 +112,7 @@ let extended = function(EApp){
                 }
                 else{
                   socket.on(message, function(){
-                    // //console.log('arguments', args)
+                    console.log('message', message)
                     callback.attempt([socket, current].append(arguments), this)
                   }.bind(this))
                 }
@@ -161,7 +161,7 @@ let extended = function(EApp){
   					// app[message](route.path, this._parallel(callbacks));
             // socket.on(message, (socket) => callbacks)
 
-  					// var perms = [];
+  					var perms = [];
   					// var routes = this.options.io.routes;
   					// //var path = (route.path != '' ) ? route.path : '/';
   					// if(message == '*'){
@@ -186,17 +186,43 @@ let extended = function(EApp){
   					// 	}.bind(this));
   					// }
   					// else{
-  					// 	perms.push(this.create_authorization_permission(message, this.uuid+'_'+route.path));
+  						perms.push(this.create_authorization_permission(message, this.uuid+'_io_'+route_index));
   					// }
             //
-  					// this.apply_authorization_permissions(perms);
+  					this.apply_authorization_permissions(perms);
             //
-  					// this.apply_authorization_roles_permission(route, perms);
+  					this.apply_authorization_roles_permission(route, perms);
 
+            route_index++
   				}.bind(this));
 
   			}.bind(this));
   		}
+
+    },
+    __callback(fn, message){
+      var callback = (typeof(fn) == 'function') ? fn : this[fn].bind(this);
+
+      if(process.env.PROFILING_ENV && this.logger){
+        // console.log('PROFILING_ENV')
+        var profile = 'ID['+this.options.id+']:IO:MESSAGE['+message+']:CALLBACK['+fn+']';
+
+        var profiling = function(){
+          // console.log('---profiling...'+profile);
+          this.profile(profile);
+
+          callback.attempt(arguments, this);
+
+          this.profile(profile);
+          //////console.log('---end profiling...'+profile);
+        }.bind(this);
+
+        // callbacks.push(profiling);
+        return profiling
+      }
+      else{
+        return callback
+      }
 
     },
     use: function(mount, app){
