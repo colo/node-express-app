@@ -41,9 +41,9 @@ let extended = function(EApp){
         this.apply_io_routes(socket)
       }
 
-      socket.on('disconnect', function () {
-
-      });
+      // socket.on('disconnect', function () {
+      //
+      // });
     },
     apply_io_routes: function(socket){
 
