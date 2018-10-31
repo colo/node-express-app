@@ -1,6 +1,8 @@
 'use strict'
 var Moo = require("mootools")
 
+let sharedsession = require("express-socket.io-session")
+
 let use = function(app){
   return extended(app)
 }
@@ -52,7 +54,7 @@ let extended = function(EApp){
 
   			Object.each(this.options.io.routes, function(routes, message){
 
-          console.log('message', message)
+          // console.log('message', message)
 
           let route_index = 0
   				routes.each(function(route){//each array is a route
@@ -104,17 +106,16 @@ let extended = function(EApp){
         				//console.log('_apply_filters start ', message);
 
         				// route.callbacks[i](socket, current);
+                let __attempt = function(){
+                  // //console.log('arguments', args)
+                  callback.attempt([socket, current].append(arguments), this)
+                }.bind(this)
+
                 if(route.once && route.once === true){
-                  socket.once(message, function(){
-                    // //console.log('arguments', args)
-                    callback.attempt([socket, current].append(arguments), this)
-                  }.bind(this))
+                  socket.once(message, __attempt)
                 }
                 else{
-                  socket.on(message, function(){
-                    console.log('message', message)
-                    callback.attempt([socket, current].append(arguments), this)
-                  }.bind(this))
+                  socket.on(message, __attempt)
                 }
 
         			}
@@ -201,7 +202,7 @@ let extended = function(EApp){
 
     },
     __callback(fn, message){
-      var callback = (typeof(fn) == 'function') ? fn : this[fn].bind(this);
+      let callback = (typeof(fn) == 'function') ? fn : this[fn].bind(this);
 
       if(process.env.PROFILING_ENV && this.logger){
         // console.log('PROFILING_ENV')
@@ -233,8 +234,19 @@ let extended = function(EApp){
       // app.implement({
       //   io: this.io.of(mount)
       // })
-      if(this.io)
-        app.add_io ( this.io.of(mount) )
+      if(this.io){
+        let io = undefined
+        if(this.session){
+          io = this.io.of(mount).use(sharedsession(this.session, {
+              autoSave: true
+          }));
+        }
+        else{
+          io = this.io.of(mount)
+        }
+
+        app.add_io ( io )
+      }
 
   		this.parent(mount, app)
     },
