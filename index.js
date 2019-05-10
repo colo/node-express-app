@@ -635,18 +635,18 @@ var ExpressApp = new Class({
 
 					var usedPath = [];
 					if(api.force_versioned_path){//route only work on api-version path
-						// app[verb](versioned_path, callbacks);
-						app[verb](versioned_path, this._parallel(callbacks));
+						app[verb](versioned_path, callbacks);
+						// app[verb](versioned_path, this._parallel(callbacks));
 						usedPath.push(versioned_path);
 					}
 					else{//route works on defined path
 						if(api.versioned_path === true && version != ''){//route also works on api-version path
-							// app[verb](versioned_path, callbacks);
-							app[verb](versioned_path, this._parallel(callbacks));
+							app[verb](versioned_path, callbacks);
+							// app[verb](versioned_path, this._parallel(callbacks));
 							usedPath.push(versioned_path);
 						}
-						// app[verb](path, callbacks);
-						app[verb](path, this._parallel(callbacks));
+						app[verb](path, callbacks);
+						// app[verb](path, this._parallel(callbacks));
 						usedPath.push(path);
 					}
 
@@ -798,8 +798,8 @@ var ExpressApp = new Class({
 
 
 
-					// app[verb](route.path, callbacks);
-					app[verb](route.path, this._parallel(callbacks));
+					app[verb](route.path, callbacks);
+					// app[verb](route.path, this._parallel(callbacks));
 
 					var perms = [];
 					var routes = this.options.routes;
