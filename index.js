@@ -1060,7 +1060,7 @@ var ExpressApp = new Class({
 
 
 								app = new app(get_options(options));
-
+								mount = (app.options && app.options.path ) ? app.options.path : '/'+mount
 
 
 
@@ -1074,9 +1074,10 @@ var ExpressApp = new Class({
 							}
 							else{//nodejs module
 								////////console.log('express app...nothing to do');
+								mount = '/'+mount;
 							}
 
-							mount = '/'+mount;
+
 
 							this.use(mount, app);
 							//apps[app.locals.id || id] = {};
@@ -1116,7 +1117,7 @@ var ExpressApp = new Class({
 
 
 						app = new app(get_options(options));
-
+						mount = (app.options && app.options.path ) ? app.options.path : '/'+mount
 
 
 						//app = instance.express();
