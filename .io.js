@@ -54,25 +54,25 @@ let extended = function(EApp){
 
   			Object.each(this.options.io.routes, function(routes, message){
 
-          // console.log('message', message)
+          console.log('message', message)
 
           let route_index = 0
   				routes.each(function(route){//each array is a route
 
-            // console.log('route', route)
+            console.log('route', route)
 
   					var path = route.path;
 
-            let currents = [];
-            // let prev = null;
+            let current = null;
+            let prev = null;
 
             for(let i = route.callbacks.length - 1; i >= 0 ; i--){
               let callback = this.__callback(route.callbacks[i], message)
 
-              // console.log('callback', i, route.callbacks[i], message)
+              console.log('callback', i, route.callbacks[i], message)
 
         			if(i == route.callbacks.length - 1){
-        				// console.log('_apply_filters last')
+        				console.log('_apply_filters last')
 
         				// if(route.callbacks.length == 1){//if there is only one filter, 'next' must be sent to "output/save"
                 //
@@ -88,9 +88,9 @@ let extended = function(EApp){
                   //
         					// }.bind(this);
                   // current = callback.pass([socket, undefined], this)
-                  currents[i] = function(){
-                    // console.log('arguments LAST ', i, route.callbacks[i], args)
-                    callback.attempt([socket, undefined].append(arguments), this)
+                  current = function(args){
+                    console.log('arguments LAST ', i, route.callbacks[i], args)
+                    callback.attempt([socket, undefined, args], this)
                   }.bind(this)
         					//console.log('_apply_filters last 2')
 
@@ -99,13 +99,13 @@ let extended = function(EApp){
         			else if(i != 0){
         				//console.log('_apply_filters not zero ', i);
                 // prev = (args) => current.pass(args)
-                // prev = current
+                prev = current
 
                 // current = callback
                 // current = callback.pass([socket, current], this)
-                currents[i] = function(){
-                  console.log('arguments ', i, route.callbacks[i], arguments)
-                  callback.attempt([socket, currents[i+1].pass(arguments)].append(arguments), this)
+                current = function(args){
+                  console.log('arguments ', i, route.callbacks[i], args)
+                  callback.attempt([socket, prev.pass(args), args], this)
                 }.bind(this)
 
 
@@ -133,17 +133,17 @@ let extended = function(EApp){
         				//console.log('_apply_filters start ', message);
 
         				// route.callbacks[i](socket, current);
-                currents[i] = function(){
-                  // console.log('arguments ', i, route.callbacks[i], arguments)
-                  callback.attempt([socket, currents[i+1].pass(arguments, this)].append(arguments), this)
+                let __attempt = function(){
+                  console.log('arguments ', i, route.callbacks[i], arguments)
+                  callback.attempt([socket, current.pass(arguments, this)].append(arguments), this)
 
                 }.bind(this)
 
                 if(route.once && route.once === true){
-                  socket.once(message, currents[i])
+                  socket.once(message, __attempt)
                 }
                 else{
-                  socket.on(message, currents[i])
+                  socket.on(message, __attempt)
                 }
 
         			}
