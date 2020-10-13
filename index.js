@@ -344,63 +344,91 @@ var ExpressApp = new Class({
 		 * **/
 
 
-		/**
-		 * authentication
-		 * - start
-		 * */
-		if(this.options.authentication && this.options.authentication.init !== false){
-			var authentication = null;
+		 /**
+ 		 * authentication
+ 		 * - start
+ 		 * */
+ 		if(this.options.authentication && this.options.authentication.init !== false){
+ 			var authentication = null;
 
-			if(typeof(this.options.authentication) == 'class'){
-				authentication = new this.options.authentication(this, {});
-				this.options.authentication = {};
-			}
-			else if(typeof(this.options.authentication) == 'function'){
-				authentication = this.options.authentication;
-				this.options.authentication = {};
-			}
-			else{
+ 			if(typeof(this.options.authentication) == 'class'){
+ 				authentication = new this.options.authentication(this, {});
+ 				this.options.authentication = {};
+ 			}
+ 			else if(typeof(this.options.authentication) == 'function'){
+ 				authentication = this.options.authentication;
+ 				this.options.authentication = {};
+ 			}
+ 			else{
+ 				let users = this.options.authentication.users
 
-				var MemoryStore = require('node-authentication').MemoryStore;
+ 				let store, auth
 
-				//----Mockups libs
-				//var UsersAuth = require(path.join(__dirname, 'libs/mockups/authentication/type/users'));
+ 				if(this.options.authentication.store){
+ 					if(this.options.authentication.store && !this.options.authentication.store.module){
+ 						debug_internals('Store', store)
+ 						store = new this.options.authentication.store(users)
+ 					}
+ 					else if(this.options.authentication.store.module){
+ 						store = new this.options.authentication.store.module(this.options.authentication.store.options)
+ 					}
+ 				}
+ 				else {
+ 					let MemoryStore = new require('node-authentication').MemoryStore;
+ 					store = new MemoryStore(users)
+ 				}
 
-				var MemoryAuth = require('node-authentication').MemoryAuth;
 
-				/*
-				 var MemcachedStore = require('connect-memcached')(require('express-session'));
-				 new MemcachedStore({
-					hosts: ['127.0.0.1:11211']
-				})
-				*/
-				var users = this.options.authentication.users;
 
-				//authentication = new Authentication(this, {
-										//store: new MemoryStore(users),
-										////auth: new UsersAuth({users: users}),
-										//auth: new MemoryAuth(users),
-										//passport: {session: (this.options.session) ? true : false}
-								  //});
+ 				if(this.options.authentication.auth){
+ 					if(this.options.authentication.auth && !this.options.authentication.auth.module){
+ 						auth = new this.options.authentication.auth(users)
+ 					}
+ 					else if(this.options.authentication.auth.module){
+ 						auth = new this.options.authentication.auth.module(this.options.authentication.auth.options)
+ 					}
+ 				}
+ 				else {
+ 					let MemoryAuth = require('node-authentication').MemoryAuth;
+ 					auth = new MemoryAuth(users)
+ 				}
 
-				authentication = new Authentication(this,
-													new MemoryStore(users),
-													new MemoryAuth(users),
-													{ passport: {session: (this.options.session) ? true : false} }
-												);
-			}
+ 				//----Mockups libs
+ 				//var UsersAuth = require(path.join(__dirname, 'libs/mockups/authentication/type/users'));
 
-			this.authentication = authentication;
+ 				/*
+ 				 var MemcachedStore = require('connect-memcached')(require('express-session'));
+ 				 new MemcachedStore({
+ 					hosts: ['127.0.0.1:11211']
+ 				})
+ 				*/
 
-			if(this.options.authentication.users)//empty users data, as is easy accesible
-				this.options.authentication.users = {};
 
-			this.fireEvent(this.ON_INIT_AUTHENTICATION, authentication);
-		}
-		/**
-		 * authentication
-		 * - end
-		 * */
+ 				//authentication = new Authentication(this, {
+ 										//store: new MemoryStore(users),
+ 										////auth: new UsersAuth({users: users}),
+ 										//auth: new MemoryAuth(users),
+ 										//passport: {session: (this.options.session) ? true : false}
+ 								  //});
+
+ 				authentication = new Authentication(this,
+ 													store,
+ 													auth,
+ 													{ passport: {session: (this.options.session) ? true : false} }
+ 												);
+ 			}
+
+ 			this.authentication = authentication;
+
+ 			if(this.options.authentication.users)//empty users data, as is easy accesible
+ 				this.options.authentication.users = {};
+
+ 			this.fireEvent(this.ON_INIT_AUTHENTICATION, authentication);
+ 		}
+ 		/**
+ 		 * authentication
+ 		 * - end
+ 		 * */
 
 		/**
 		 * authorization
