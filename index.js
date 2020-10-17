@@ -237,7 +237,7 @@ var ExpressApp = new Class({
 
 		this.setOptions(options);//override default options
 
-		this.uuid = uuidv5(this.options.path, uuidv5.URL);
+		this.uuid = uuidv5(this.options.id, uuidv5.URL);
 
 		//////console.log('----UUID----');
 		//////console.log(this.options.path);
@@ -344,91 +344,91 @@ var ExpressApp = new Class({
 		 * **/
 
 
-		 /**
- 		 * authentication
- 		 * - start
- 		 * */
- 		if(this.options.authentication && this.options.authentication.init !== false){
- 			var authentication = null;
+		/**
+		 * authentication
+		 * - start
+		 * */
+		if(this.options.authentication && this.options.authentication.init !== false){
+			var authentication = null;
 
- 			if(typeof(this.options.authentication) == 'class'){
- 				authentication = new this.options.authentication(this, {});
- 				this.options.authentication = {};
- 			}
- 			else if(typeof(this.options.authentication) == 'function'){
- 				authentication = this.options.authentication;
- 				this.options.authentication = {};
- 			}
- 			else{
- 				let users = this.options.authentication.users
+			if(typeof(this.options.authentication) == 'class'){
+				authentication = new this.options.authentication(this, {});
+				this.options.authentication = {};
+			}
+			else if(typeof(this.options.authentication) == 'function'){
+				authentication = this.options.authentication;
+				this.options.authentication = {};
+			}
+			else{
+				let users = this.options.authentication.users
 
- 				let store, auth
+				let store, auth
 
- 				if(this.options.authentication.store){
- 					if(this.options.authentication.store && !this.options.authentication.store.module){
- 						debug_internals('Store', store)
- 						store = new this.options.authentication.store(users)
- 					}
- 					else if(this.options.authentication.store.module){
- 						store = new this.options.authentication.store.module(this.options.authentication.store.options)
- 					}
- 				}
- 				else {
- 					let MemoryStore = new require('node-authentication').MemoryStore;
- 					store = new MemoryStore(users)
- 				}
-
-
-
- 				if(this.options.authentication.auth){
- 					if(this.options.authentication.auth && !this.options.authentication.auth.module){
- 						auth = new this.options.authentication.auth(users)
- 					}
- 					else if(this.options.authentication.auth.module){
- 						auth = new this.options.authentication.auth.module(this.options.authentication.auth.options)
- 					}
- 				}
- 				else {
- 					let MemoryAuth = require('node-authentication').MemoryAuth;
- 					auth = new MemoryAuth(users)
- 				}
-
- 				//----Mockups libs
- 				//var UsersAuth = require(path.join(__dirname, 'libs/mockups/authentication/type/users'));
-
- 				/*
- 				 var MemcachedStore = require('connect-memcached')(require('express-session'));
- 				 new MemcachedStore({
- 					hosts: ['127.0.0.1:11211']
- 				})
- 				*/
+				if(this.options.authentication.store){
+					if(this.options.authentication.store && !this.options.authentication.store.module){
+						debug_internals('Store', store)
+						store = new this.options.authentication.store(users)
+					}
+					else if(this.options.authentication.store.module){
+						store = new this.options.authentication.store.module(this.options.authentication.store.options)
+					}
+				}
+				else {
+					let MemoryStore = new require('node-authentication').MemoryStore;
+					store = new MemoryStore(users)
+				}
 
 
- 				//authentication = new Authentication(this, {
- 										//store: new MemoryStore(users),
- 										////auth: new UsersAuth({users: users}),
- 										//auth: new MemoryAuth(users),
- 										//passport: {session: (this.options.session) ? true : false}
- 								  //});
 
- 				authentication = new Authentication(this,
- 													store,
- 													auth,
- 													{ passport: {session: (this.options.session) ? true : false} }
- 												);
- 			}
+				if(this.options.authentication.auth){
+					if(this.options.authentication.auth && !this.options.authentication.auth.module){
+						auth = new this.options.authentication.auth(users)
+					}
+					else if(this.options.authentication.auth.module){
+						auth = new this.options.authentication.auth.module(this.options.authentication.auth.options)
+					}
+				}
+				else {
+					let MemoryAuth = require('node-authentication').MemoryAuth;
+					auth = new MemoryAuth(users)
+				}
 
- 			this.authentication = authentication;
+				//----Mockups libs
+				//var UsersAuth = require(path.join(__dirname, 'libs/mockups/authentication/type/users'));
 
- 			if(this.options.authentication.users)//empty users data, as is easy accesible
- 				this.options.authentication.users = {};
+				/*
+				 var MemcachedStore = require('connect-memcached')(require('express-session'));
+				 new MemcachedStore({
+					hosts: ['127.0.0.1:11211']
+				})
+				*/
 
- 			this.fireEvent(this.ON_INIT_AUTHENTICATION, authentication);
- 		}
- 		/**
- 		 * authentication
- 		 * - end
- 		 * */
+
+				//authentication = new Authentication(this, {
+										//store: new MemoryStore(users),
+										////auth: new UsersAuth({users: users}),
+										//auth: new MemoryAuth(users),
+										//passport: {session: (this.options.session) ? true : false}
+								  //});
+
+				authentication = new Authentication(this,
+													store,
+													auth,
+													{ passport: {session: (this.options.session) ? true : false} }
+												);
+			}
+
+			this.authentication = authentication;
+
+			if(this.options.authentication.users)//empty users data, as is easy accesible
+				this.options.authentication.users = {};
+
+			this.fireEvent(this.ON_INIT_AUTHENTICATION, authentication);
+		}
+		/**
+		 * authentication
+		 * - end
+		 * */
 
 		/**
 		 * authorization
@@ -825,6 +825,7 @@ var ExpressApp = new Class({
 					}.bind(this));
 
 
+					debug('routes', verb, route.path)
 
 					app[verb](route.path, callbacks);
 					// app[verb](route.path, this._parallel(callbacks));
@@ -950,6 +951,7 @@ var ExpressApp = new Class({
 		//////console.log('app');
 		//////console.log(typeOf(app));
 
+
 		this.fireEvent(this.ON_USE, [mount, app, this]);
 
 		if(typeOf(app) == 'class' || typeOf(app) == 'object')
@@ -983,7 +985,7 @@ var ExpressApp = new Class({
 			//}
 
 
-
+			debug('use', mount, app.options.id)
 			this.app.use(mount, app.express());
 		}
 		else{
@@ -1039,6 +1041,7 @@ var ExpressApp = new Class({
 
 		////////console.log('load.options');
 		////////console.log(options);
+		let mount_last = undefined //for mounting '/'
 
 		fs.readdirSync(wrk_dir).forEach(function(file) {
 
@@ -1107,7 +1110,12 @@ var ExpressApp = new Class({
 
 
 
-							this.use(mount, app);
+							if(mount === '/'){
+								mount_last = {mount: mount, app: app}
+							}
+							else{
+								this.use(mount, app)
+							}
 							//apps[app.locals.id || id] = {};
 							//apps[app.locals.id || id]['app'] = app;
 							//apps[app.locals.id || id]['mount'] = mount;
@@ -1155,7 +1163,13 @@ var ExpressApp = new Class({
 						////////console.log('express app...nothing to do');
 					}
 
-					this.use(mount, app);
+					if(mount === '/'){
+						mount_last = {mount: mount, app: app}
+					}
+					else{
+						this.use(mount, app)
+					}
+
 					//apps[app.locals.id || id] = {};
 					//apps[app.locals.id || id]['app'] = app;
 					//apps[app.locals.id || id]['mount'] = mount;
@@ -1165,6 +1179,9 @@ var ExpressApp = new Class({
 			}
 		}.bind(this))
 
+		if(mount_last !== undefined){
+			this.use(mount_last.mount, mount_last.app)
+		}
 		//return apps;
 	},
   express: function(){
@@ -1266,6 +1283,52 @@ var ExpressApp = new Class({
 				res.status(406).send('Not Acceptable '+ err);
 			}
 		});
+	},
+	_arguments: function(args){
+		// debug('_arguments', args)
+		// process.exit(1)
+		let req, resp, next, socket = undefined
+
+		if(args[0]._readableState){//express
+			req = args[0]
+			resp = args[1]
+			next = args[2]
+		}
+		else{//socket.io
+			socket = args[0]
+			next = args[1]
+		}
+
+		// let params = {}
+    let opts = {}
+		let additional = []
+		if(typeof(req) !== 'undefined'){
+			opts = {params: req.params, body: req.body, query: req.query}
+		}
+		else{
+			opts = args[2]
+
+			// if(args[3]){
+      //   opts = []
+      //   for(let i = 2; i < args.length; i++){
+      //     opts.push(args[i])
+      //   }
+      // }
+      // else{
+      //   opts = args[2]
+      // }
+
+      opts = opts || {params: {}, body: {}, query: {}}
+		}
+
+		if(args[3]){
+			for(let i = 3; i < args.length; i++){
+				additional.push(args[i])
+			}
+		}
+
+    // debug_internals('_arguments', {req, resp, socket, next, params})
+		return {req, resp, socket, next, opts, additional}
 	},
 
 });
